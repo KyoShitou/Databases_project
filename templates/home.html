@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        DEBUG
+    </head>
+    <table border="1">
+        <tr>
+            <th>Airline</th>
+            <th>Number</th>
+            <th>Departure Time</th>
+            <th>Arrival Time</th>
+            <th>Status</th>
+            <th>Departure Airport</th>
+            <th>Arrival Airport</th>
+        </tr>
+{% for flight in data %}
+        <tr>
+            <td>{{flight.Airline_name}}</td>
+            <td>{{flight.flight_num}}</td>
+            <td>{{flight.Departure_time}}</td>
+            <td>{{flight.Arrival_time}}</td>
+            <td>{{flight.status}}</td>
+            <td>{{flight.Departure_Airport}}</td>
+            <td>{{flight.Arrival_Airport}}</td>
+        </tr>
+{% endfor %}
+    </table>
+    
+</html>

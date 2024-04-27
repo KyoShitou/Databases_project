@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        DEBUG
+        <style>
+            /* Style for the container */
+            .container {
+                display: flex; /* Use flexbox for layout */
+                gap: 20px; /* Gap between the two select elements */
+            }
+    
+            /* Style for each select element */
+            select {
+                width: 150px; /* Set a fixed width */
+                padding: 5px; /* Add some padding */
+                font-size: 16px; /* Set the font size */
+            }
+        </style>
+    </head>
+    <div class="container">
+        <div>
+            <form action="/update_content/Index/Dept_City" method="post">
+            <label for="Departure City">Choose a departure city:</label>
+            <select id="Dept_City" name="Departure City">
+                <option value="None"> </option>\n
+                {city_pulldown_msg}
+            </select>
+            </form>
+        </div>
+        <div>
+            <form action="/update_content/Index/Arri_City" method="post">
+            <label for="Arrival City">Choose an Arrival city</label>
+            <select id="Arri_City" name="Arrival City">
+                <option value="None"> </option>\n
+                {city_pulldown_msg}
+            </select>
+            </form>
+        </div>
+    </div>
+    <button type="submit">Submit</button>
+
+    <table border="1">
+        <tr>
+            <th>Flight</th>
+            <th>Departure Time</th>
+            <th>Arrival Time</th>
+            <th>Status</th>
+            <th>Available seats</th>
+            <th>Departure Airport</th>
+            <th>Departure City</th>
+            <th>Arrival Airport</th>
+            <th>Arrival City</th>
+        </tr>
+            {msg}
+    </table>
+    
+</html>

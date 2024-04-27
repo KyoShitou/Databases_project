@@ -59,7 +59,7 @@ INSERT INTO Airplane (IATA_code, seats) VALUES("MU", 355);
 INSERT INTO Airplane (IATA_code, seats) VALUES("MU", 400);
 INSERT INTO Airplane (IATA_code, seats) VALUES("NH", 300);
 INSERT INTO Airplane (IATA_code, seats) VALUES("AA", 400);
-INSERT INTO BookingAgent VALUES("Agt@Agt.com", "agt" , 0);
+INSERT INTO BookingAgent (email, name, password) VALUES("Agt@Agt.com", "agt" , "password");
 INSERT INTO AirlineStaff VALUES("staff", "staff", "airline", "staff", "1800-01-01", FALSE, FALSE, "MU");
 
 

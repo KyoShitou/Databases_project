@@ -82,8 +82,9 @@ CREATE TABLE Customer (
 
 CREATE TABLE BookingAgent(
     email      VARCHAR(50) NOT NULL,
+    name       VARCHAR(50) NOT NULL,
     password   VARCHAR(50) NOT NULL,
-    booking_agent_id INT,
+    booking_agent_id AUTO_INCREMENT INT,
     PRIMARY KEY (email)
 );
 

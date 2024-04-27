@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Registration Form</title>
+</head>
+
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <div class="alert alert-danger">
+      {% for message in messages %}
+        {{ message }}
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<body>
+    <h2>Registration Form</h2>
+    <form method="post" action="/register">
+        <label for="username">Username:</label><br>
+        <input type="text" id="username" name="username" placeholder={{username}} required><br><br>
+        
+        <label for="name">Name:</label><br>
+        <input type="text" id="name" name="name" required><br><br>
+
+        <label for="email">Email:</label><br>
+        <input type="email" id="email" name="email" placeholder={{email}} required><br><br>
+        
+        <label for="password">Password:</label><br>
+        <input type="password" id="password" name="password" placeholder={{password}} required><br><br>
+
+        <label for="company">Select the company you work for: </label><br>
+        {% for airline in airline_names %}
+            <input type="checkbox" id="{{ airline }}" name="company" value="{{ airline }}">
+            <label for="{{ airline }}">{{ airline }}</label><br>
+        {% endfor %}
+        
+        <input type="submit" value="Register">
+    </form>
+</body>
+</html>

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Registration Form</title>
+</head>
+<body>
+    <h2>Registration Form</h2>
+    <form method="post" action="/register">
+        <label for="username">Username:</label><br>
+        <input type="text" id="username" name="username" required><br><br>
+        
+        <label for="email">Email:</label><br>
+        <input type="email" id="email" name="email" required><br><br>
+        
+        <label for="password">Password:</label><br>
+        <input type="password" id="password" name="password" required><br><br>
+
+        <label for="type">Please choose the term that describes you the best: </label><br><br>
+        <select id="type" name="Identity">
+            <option value="Customer">Customer</option>
+            <option value="Agent">Booking Agent</option>
+            <option value="Staff">Airline Staff</option>
+        
+        <input type="submit" value="Register">
+    </form>
+</body>
+</html>

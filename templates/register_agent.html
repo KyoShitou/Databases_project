@@ -16,18 +16,15 @@
 
 <body>
     <h2>Registration Form</h2>
-    <form method="post" action="/register">
+    <form method="post" action="/register/agent">
         <label for="username">Username:</label><br>
-        <input type="text" id="username" name="username" placeholder={{username}} required><br><br>
-        
-        <label for="name">Name:</label><br>
-        <input type="text" id="name" name="name" required><br><br>
+        <input type="text" id="username" name="username" value="{{username}}" required><br><br>
 
         <label for="email">Email:</label><br>
-        <input type="email" id="email" name="email" placeholder={{email}} required><br><br>
+        <input type="email" id="email" name="email" value="{{email}}" required><br><br>
         
         <label for="password">Password:</label><br>
-        <input type="password" id="password" name="password" placeholder={{password}} required><br><br>
+        <input type="password" id="password" name="password" value="{{password}}" required><br><br>
 
         <label for="company">Select the company you work for: </label><br>
         {% for airline in airline_names %}
@@ -35,7 +32,7 @@
             <label for="{{ airline }}">{{ airline }}</label><br>
         {% endfor %}
         
-        <input type="submit" value="Register">
+        <button type="submit">Register</button>
     </form>
 </body>
 </html>

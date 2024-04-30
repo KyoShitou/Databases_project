@@ -4,7 +4,7 @@ import pymysql.cursors
 app = Flask(__name__)
 app.secret_key = "DATABASES"
 
-conn = pymysql.connect(host="localhost", user="root", password="root", db="Airplane_Management", charset="utf8mb4", cursorclass=pymysql.cursors.DictCursor)
+conn = pymysql.connect(host="localhost", user="root", password="", db="Airplane_Management", charset="utf8mb4", cursorclass=pymysql.cursors.DictCursor)
 
 def searchFlight(dept_city=None, dept_apt=None, arrival_city=None, arrival_ap=None, date=None):
     condition = []
@@ -74,7 +74,7 @@ def searchFlight(dept_city=None, dept_apt=None, arrival_city=None, arrival_ap=No
 
     return data
 
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/', endpoint="home", methods=['GET', 'POST'])
 def DisplayUpcomingFlight():
     data = searchFlight()
 
@@ -93,53 +93,59 @@ def DisplayUpcomingFlight():
 
     for airport in airport_lst:
         airport_pulldown_lst += f"<option value=\"{airport['Airport_name']}\">{airport['Airport_name']}</option>\n"
+    
+    login_status = "NOT LOGGED IN"
+    # msg = ''
 
-    msg = ''
 
-
-    for flight in data:
-        msg += "<tr>\n"
-        # msg += f"<td> {flight['IATA_code']} </td>\n"
-        # msg += f"<td> {flight['flight_num']} </td>\n"
-        msg += f"<td> {flight['IATA_code']}{flight['flight_num']:03} </td>\n"
-        msg += f"<td> {flight['Departure_time']} </td>\n"
-        msg += f"<td> {flight['Arrival_time']} </td>\n"
-        msg += f"<td "
-        if flight['status_now'] == 'completed':
-            msg += "style=\"color: grey;\">"
-        elif flight['status_now'] == 'cancelled':
-            msg += "style=\"color: red;\">"
-        elif flight['status_now'] == 'upcoming':
-            msg += "style=\"color: green;\">"
-        elif flight['status_now'] == 'delayed':
-            msg += "style=\"color: orange;\">"
-        elif flight['status_now'] == 'in-progress':
-            msg += "style=\"color: green;\">"
-        msg += f"{flight['status_now']} </td>\n"
-        msg += f"<td> {flight['remaining_seats']} </td>\n"
-        msg += f"<td> {flight['Departure_Airport']} </td>\n"
-        msg += f"<td> {flight['Dept_City']} </td>\n"
-        msg += f"<td> {flight['Arrival_Airport']} </td>\n"
-        msg += f"<td> {flight['Arri_City']} </td>\n"
-        msg += "</tr>\n"
+    # for flight in data:
+    #     msg += "<tr>\n"
+    #     # msg += f"<td> {flight['IATA_code']} </td>\n"
+    #     # msg += f"<td> {flight['flight_num']} </td>\n"
+    #     msg += f"<td> {flight['IATA_code']}{flight['flight_num']:03} </td>\n"
+    #     msg += f"<td> {flight['Departure_time']} </td>\n"
+    #     msg += f"<td> {flight['Arrival_time']} </td>\n"
+    #     msg += f"<td "
+    #     if flight['status_now'] == 'completed':
+    #         msg += "style=\"color: grey;\">"
+    #     elif flight['status_now'] == 'cancelled':
+    #         msg += "style=\"color: red;\">"
+    #     elif flight['status_now'] == 'upcoming':
+    #         msg += "style=\"color: green;\">"
+    #     elif flight['status_now'] == 'delayed':
+    #         msg += "style=\"color: orange;\">"
+    #     elif flight['status_now'] == 'in-progress':
+    #         msg += "style=\"color: green;\">"
+    #     msg += f"{flight['status_now']} </td>\n"
+    #     msg += f"<td> {flight['remaining_seats']} </td>\n"
+    #     msg += f"<td> {flight['Departure_Airport']} </td>\n"
+    #     msg += f"<td> {flight['Dept_City']} </td>\n"
+    #     msg += f"<td> {flight['Arrival_Airport']} </td>\n"
+    #     msg += f"<td> {flight['Arri_City']} </td>\n"
+    #     msg += "</tr>\n"
         
     f = open("templates/home_alt.html")
     h = f.read()
     f.close()
-    return render_template_string(h.replace("{msg}", msg).replace("{city_pulldown_msg}", city_pulldown_msg))
+    return render_template("home_alt.html", flights=data, city_pulldown_msg=city_pulldown_msg, airport_pulldown_lst=airport_pulldown_lst
+                           , login_status=login_status, city_lst=city_lst, airport_lst=airport_lst)
+    # return render_template_string(h.replace("{msg}", msg).replace("{city_pulldown_msg}", city_pulldown_msg))
 
 @app.route('/register', methods=["GET", "POST"])
 def register():
     if request.method == "POST":
-        username = request.form["username"]
-        email = request.form["email"]
-        password = request.form["password"]
-        user_type = request.form["Identity"]
+        try:
+            username = request.form["username"]
+            email = request.form["email"]
+            password = request.form["password"]
+            user_type = request.form["Identity"]
 
-        if user_type == "Customer":
-            return redirect(url_for("register_customer", username=username, password=password, email=email))
-        elif user_type == "Agent":
-            return redirect(url_for("register_agent", username=username, password=password, email=email))    
+            if user_type == "Customer":
+                return redirect(url_for("register_customer", username=username, password=password, email=email))
+            elif user_type == "Agent":
+                return redirect(url_for("register_agent", username=username, password=password, email=email)) 
+        except:
+            return render_template("register.html")   
         
     return render_template("register.html")
 
@@ -168,25 +174,31 @@ def agent_reg():
         airlines_lst.append(airline["Airline_name"])
 
     if request.method == "POST":
-        agent_name = request.form["name"]
+        user_name = request.form["username"]
+        email = request.form["email"]
+        password = request.form["password"]
         checked__company = request.form.getlist("company")
 
         err_flag = False
 
         cursor = conn.cursor()
         try:
-            cursor.execute(f"""INSERT INTO BookingAgent (email, name, password)
-                           VALUES('{email}', '{agent_name}',
+            cursor.execute(f"""INSERT INTO Customer (email, name, password)
+                           VALUES('{email}', '{user_name}',
+                           '{password}')""")        
+            print(f"""EXECUTED INSERT INTO BookingAgent (email, name, password)
+                           VALUES('{email}', '{user_name}',
                            '{password}')""")
         except:
             err_flag = True
+            flash(f"Error: {email} already exists")
         finally:
             cursor.close()
 
         unknown_err_flag = False
 
         if err_flag:
-            flash(f"Error: {email} already exists")
+            pass
         else:
             for company in checked__company:
                 cursor = conn.cursor()
@@ -200,6 +212,10 @@ def agent_reg():
 
             if unknown_err_flag:
                 flash(f"Error: Unknown Error")
+                redirect(url_for("register_agent", username=username, email=email, password=password))
+            else:
+                flash(f"Success: {email} has been registered as an agent for {checked__company}")
+                return redirect(url_for("home"))
 
 
     return render_template("register_agent.html", username=username, email=email, password=password, airline_names=airlines_lst)

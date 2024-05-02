@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home</title>
+</head>
+
+<body style="font-family:Arial, Helvetica, sans-serif">
+    <h1>View my flights</h1>
+    <form action="{{ url_for('track_spendings') }}" method="post">
+        <label for="departure_date_from">Departure Date from:</label>
+        <input type="date" id="departure_date_from" name="departure_date_from" >
+        <label for="departure_date_to"> to:</label>
+        <input type="date" id="departure_date_to" name="departure_date_to" ><br>
+        <input type="submit" value="Search">
+    </form>
+    <img src="{{ filename }}" >
+    <a href="{{ url_for('home') }}">Home</a>
+</body>

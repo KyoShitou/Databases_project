@@ -6,14 +6,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Home</title>
 </head>
-<body>
+<body style="font-family:Arial, Helvetica, sans-serif">
     <h1>Welcome to the Home Page</h1>
     {% if session.logged_in %}
         <p>Hello, {{ session.username }}!</p>
-        <a href="{{ url_for('logout') }}">Logout</a>
+        <a href="{{ url_for('logout') }}">Logout</a><br><br>
     {% else %}
         <a href="{{ url_for('login') }}">Login</a>
-        <a href="{{ url_for('register') }}">Register</a>
+        <a href="{{ url_for('register') }}">Register</a><br>
+    {% endif %}
+
+    {% if not session.logged_in %}
+        <a href="{{ url_for('search_flights') }}">Search flights</a>
+    {% else %}
+        {% if session.role == 'Customer' %}
+            <a href="{{ url_for('view_my_flights') }}">View my flights</a><br>
+            <a href="{{ url_for('search_flights') }}">Buy tickets</a><br>
+            <a href="{{ url_for('track_spendings') }}">Track my spending</a><br>
+        {% elif session.role == 'Agent' %}
+            <a href="{{ url_for('view_my_flights') }}">View my flights</a><br>
+            <a href="{{ url_for('search_flights') }}">Buy tickets</a><br>
+            <a href="{{ url_for('view_commission') }}">View my commission</a><br>
+            <a href="{{ url_for('view_top_customers') }}">View top customers</a><br>
+        {% elif session.role == 'Staff' %}
+            <a href="{{ url_for('view_my_flights') }}">Manage flights</a><br>
+            <a href="{{ url_for('create_new_flights') }}">Create new flights</a><br>
+            <a href="{{ url_for('add_new_plane') }}">Add new plane</a><br>
+            <a href="{{ url_for('add_new_airport') }}">Add new airport</a><br>
+            <a href="{{ url_for('manage_agents') }}">Manage agents</a><br>
+            <a href="{{ url_for('view_frequent_customers') }}">View frequent customers</a><br>
+            <a href="{{ url_for('view_reports') }}">View reports</a><br>
+            <a href="{{ url_for('manage_staff') }}">Manage airline staff</a><br>
+        {% endif %}
     {% endif %}
 </body>
 </html>

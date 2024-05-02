@@ -6,15 +6,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Registration</title>
 </head>
-<body>
-    <h1>User Registration</h1>
-    <form action="{{ url_for('register') }}" method="post">
+
+<body style="font-family:Arial, Helvetica, sans-serif">
+    <h1 style="font-family:Arial, Helvetica, sans-serif">User Registration</h1>
+    <script>
+        {% if error[0]==True %}
+            alert('{{ error[1] }}');
+        {% endif %}
+    </script>
+    <form action="{{ url_for('reg_customer') }}" method="post">
         <label for="username">Username:</label><br>
-        <input type="text" id="username" name="username" value="{{ request.form['username'] }}" required><br>
+        <input type="text" id="username" name="username" value="{{ username }}" required><br>
         <label for="password">Password:</label><br>
-        <input type="password" id="password" name="password" value="{{ request.form['password'] }}" required><br>
+        <input type="password" id="password" name="password" value="{{ password }}" required><br>
         <label for="email">Email:</label><br>
-        <input type="email" id="email" name="email" value="{{ request.form['email'] }}" required><br>
+        <input type="email" id="email" name="email"  required><br>
 
         <label for="address">Address:</label><br>
         <textarea id="address" name="address" rows="4" cols="50" required></textarea><br>
@@ -34,7 +40,7 @@
 
         <label for="dob">Date of Birth:</label><br>
         <input type="date" id="dob" name="dob" required><br>
-        
+
         <input type="hidden" name="role" value="user">
         <input type="submit" value="Register">
     </form>

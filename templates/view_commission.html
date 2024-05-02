@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home</title>
+</head>
+
+<body style="font-family:Arial, Helvetica, sans-serif">
+    <h1>View my flights</h1>
+    <form action="{{ url_for('view_commission') }}" method="post">
+        <label for="departure_date_from">Search Date from:</label>
+        <input type="date" id="departure_date_from" name="departure_date_from" value="{{start_date}}">
+        <label for="departure_date_to"> to:</label>
+        <input type="date" id="departure_date_to" name="departure_date_to" value="{{end_date}}"><br>
+        <input type="submit" value="Search">
+    </form>
+
+    {% if not start_date and not end_date %}
+        <h1>Statics for the past 30 days</h1>
+    {% elif start_date and not end_date %}
+        <h1>Statics from {{start_date}} till now</h1>
+    {% elif not start_date and end_date %}
+        <h1>Statics till {{end_date}}</h1>
+    {% elif start_date and end_date %}
+        <h1>Statics from {{start_date}} to {{end_date}}</h1>
+    {% endif %}
+
+    <ul>
+        <li>Total commission: {{ttl_commission}}</li>
+        <li>Average commission per flight: {{avg_commission}}</li>
+        <li>Total number of tickets: {{ttl_tickets}}</li>
+    </ul>
+
+    <a href="{{ url_for('home') }}">Home</a>
+
+</body>

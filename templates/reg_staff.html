@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register</title>
+</head>
+<body>
+    <h1>Register</h1>
+    <form action="{{ url_for('register') }}" method="post">
+        <label for="username">Username:</label><br>
+        <input type="text" id="username" name="username" value="{{ request.form['username'] }}" required><br>
+        <label for="password">Password:</label><br>
+        <input type="password" id="password" name="password" value="{{ request.form['password'] }}" required><br>
+        <label for="first_name">First Name:</label><br>
+        <input type="text" id="first_name" name="first_name" value="{{ request.form['first_name'] }}" required><br>
+        <label for="last_name">Last Name:</label><br>
+        <input type="text" id="last_name" name="last_name" value="{{ request.form['last_name'] }}" required><br>
+        <label for="dob">Date of Birth:</label><br>
+        <input type="date" id="dob" name="dob" value="{{ request.form['dob'] }}" required><br>
+        <label for="admin_premission">Admin Premission:</label><br>
+        <select id="admin_premission" name="admin_premission">
+            <option value="1">Yes</option>
+            <option value="0">No</option>
+        </select><br>
+        <label for="oper_premission">Operator Premission:</label><br>
+        <select id="oper_premission" name="oper_premission">
+            <option value="1">Yes</option>
+            <option value="0">No</option>
+        </select><br>
+        <input type="submit" value="Register">
+    </form>
+</body>
+</html>

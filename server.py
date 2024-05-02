@@ -37,11 +37,29 @@ def register():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
+        role = request.form['role']
         if username in users:
             return 'Username already exists'
         users[username] = {'username': username, 'password': password}
-        return redirect(url_for('login'))
+        if role == "Customer":
+            return redirect(url_for('reg_customer'))
+        elif role == "Agent":
+            return redirect(url_for('reg_agent'))
+        else:
+            return redirect(url_for('reg_staff'))
     return render_template('register.html')
+
+@app.route('/reg_customer', methods=['GET', 'POST'])
+def reg_customer():
+    return render_template('reg_customer.html')
+
+@app.route('/reg_agent', methods=['GET', 'POST'])
+def reg_agent():
+    return render_template('reg_agent.html')
+
+@app.route('/reg_staff', methods=['GET', 'POST'])
+def reg_staff():
+    return render_template('reg_staff.html')
 
 @app.route('/logout')
 def logout():
@@ -52,4 +70,3 @@ def logout():
 if __name__ == '__main__':
     app.run(debug=True)
 
-    

@@ -64,62 +64,27 @@
         </form>
     </div>
 
-
-
-
-
-
-    <!-- <div class="container">
-        <div>
-            <form action="/update_content/Index/Dept_City" method="post">
-            <label for="Departure City">Choose a departure city:</label>
-            <select id="Dept_City" name="Departure City">
-                <option value="None"> </option>\n
-                {% for city in city_lst %}
-                    <option value="{{city['City']}}">{{city['City']}}</option>
-                {% endfor %}
-            </select><br>
-            <form action="/update_content/Index/Dept_Airport" method="post">
-                <label for="Departure Airport">Choose a departure airport:</label>
-                <select id="Dept_Airport" name="Departure Airport">
-                    <option value="None"> </option>\n
-                    {% for airport in airport_lst %}
-                        <option value="{{airport['Airport_name']}}">{{airport['Airport_name']}}</option>
-                    {% endfor %}
-                </select>
+    {% if login_status[0]=="NOT LOGGED IN" %}
+        <div style="position: absolute; top: 3; right: 0;">
+            <form action="/signin" method="post">
+                {{login_status}} <br>
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username"><br>
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password"><br>
+                <button type="submit">Sign In</button>
+                <button type="submit" formaction="/register">Register</button>
             </form>
         </div>
-        <div>
-            <form action="/update_content/Index/Arri_City" method="post">
-            <label for="Arrival City">Choose an Arrival city</label>
-            <select id="Arri_City" name="Arrival City">
-                <option value="None"> </option>
-                {% for city in city_lst %}
-                    <option value="{{city['City']}}">{{city['City']}}</option>
-                {% endfor %}
-            </select><br>
-            <form action="/update_content/Index/Arri_Airport" method="post">
-                <label for="Arrival Airport">Choose an Arrival airport:</label>
-                <select id="Arri_Airport" name="Arrival Airport">
-                    <option value="None"> </option>\n
-                    {% for airport in airport_lst %}
-                        <option value="{{airport['Airport_name']}}">{{airport['Airport_name']}}</option>
-                    {% endfor %}
-                </select>
+    {% else %}
+        <div style="position: absolute; top: 3; right: 0;">
+            <form action="/logout" method="post">
+                Welcome, {{login_status[2]}} {{login_status[1]}} <br>
+                <button type="submit">logout</button>
+                <button type="submit" formaction="/logout">Log out</button>
             </form>
-        </div> -->
-
-    <div style="position: absolute; top: 3; right: 0;">
-        <form action="/signin" method="post">
-            {{login_status}} <br>
-            <label for="username">Username:</label>
-            <input type="text" id="username" name="username"><br>
-            <label for="password">Password:</label>
-            <input type="password" id="password" name="password"><br>
-            <button type="submit">Sign In</button>
-            <button type="submit" formaction="/register">Register</button>
-        </form>
-    </div>
+        </div>
+    {% endif %}
 
     <table border="1">
         <tr>

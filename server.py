@@ -19,12 +19,17 @@ users = {
         'username': 'user3',
         'password': 'password3',
         'role': 'Staff'
+    },
+    'user4': {
+        'username': 'user4',
+        'password': 'password4',
+        'role': 'Staff'
     }
 }
 
 @app.route('/', endpoint='home')
 def home():
-    return render_template('home.html')
+    return render_template('home.html', msg=[False])
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -35,9 +40,12 @@ def login():
             session['logged_in'] = True
             session['username'] = username
             session['role'] = users[username]['role']
-            if session['role'] == 'Staff':
+            if session['role'] == 'Staff' and session['username'] == 'user3':
                 session['admin'] = True
                 session['operator'] = True
+            elif session['role'] == 'Staff' and session['username'] == 'user4':
+                session['admin'] = False
+                session['operator'] = False
             
             print(f"User {username} logged in")
             return redirect(url_for('home'))
@@ -176,15 +184,52 @@ def manage_flights():
 
 @app.route('/create_new_flights', methods=['GET', 'POST'])
 def create_new_flights():
-    return
+    if session["admin"] == False:
+        return redirect(url_for('home'))
+    if request.method == 'POST':
+        departure_airport = request.form['departure_airport']
+        arrival_airport = request.form['arrival_airport']
+        departure_time = request.form['departure_time']
+        arrival_time = request.form['arrival_time']
+        price = request.form['price']
+        airplane_id = request.form['Airplane_id']
+        print(f"New flight created from {departure_airport} to {arrival_airport} at {departure_time} to {arrival_time} for ${price} with airplane {airplane_id}")
+        return render_template('create_new_flights.html', msg=[True, f"New flight created from {departure_airport} to {arrival_airport} at {departure_time} to {arrival_time} for ${price} with airplane {airplane_id}"])
+    return render_template('create_new_flights.html', msg=[False])
+
+@app.route('/change_status', methods=['GET', 'POST'])
+def change_status():
+    if session["operator"] == False and session["admin"] == False:
+        return redirect(url_for('home'))
+    
+    if request.method == 'POST':
+        flight_id = request.form['flight_id']
+        new_departure_time = request.form['new_departure_time'] 
+        new_arrival_time = request.form['new_arrival_time']
+
+        print(f"Flight {flight_id} departure time changed to {new_departure_time} and arrival time changed to {new_arrival_time} by {session['username']}")
+    return render_template('change_status.html')
 
 @app.route('/add_new_plane', methods=['GET', 'POST'])
 def add_new_plane():
-    return
+    if session["admin"] == False:
+        return redirect(url_for('home'))
+    if request.method == 'POST':
+        seat_count = request.form['seats']
+        print(f"New plane added with {seat_count} seats by {session['username']}")
+        return render_template('add_new_plane.html', msg=[True, f"New plane added with {seat_count} seats"])
+    return render_template('add_new_plane.html', msg=[False])
 
 @app.route('/add_new_airport', methods=['GET', 'POST'])
 def add_new_airport():
-    return
+    if session["admin"] == False:
+        return redirect(url_for('home'))
+    if request.method == 'POST':
+        airport_name = request.form['airport_name']
+        city = request.form['airport_city']
+        print(f"New airport added with name {airport_name} in {city} by {session['username']}")
+        return render_template('add_new_airport.html', msg=[True, f"New airport added with name {airport_name} in {city}"])
+    return render_template('add_new_airport.html', msg=[False])
 
 @app.route('/add_new_agent', methods=['GET', 'POST'])
 def add_new_agent():
@@ -192,19 +237,45 @@ def add_new_agent():
 
 @app.route('/manage_agents', methods=['GET', 'POST'])
 def manage_agents():
-    return
+    if request.method == 'POST' and request.form.get("Search"):
+        date_from = request.form['from_date']
+        date_to = request.form['date_to']
+        print(f"Searching for agents from {date_from} to {date_to}")
+        return render_template('manage_agents.html', msg=[True, f"Searching for agents from {date_from} to {date_to}"])  
+    if request.method == 'POST' and request.form.get("Add"):
+        email = request.form['email']
+        print(f"Agent {email} added by {session['username']}")
+        return render_template('manage_agents.html', msg=[True, f"Agent {email} added by {session['username']}"])      
+    return render_template('manage_agents.html', msg=[False])
 
 @app.route('/view_frequent_customers', methods=['GET', 'POST'])
 def view_frequent_customers():
-    return
+    if request.method == 'POST' and request.form.get("Search"):
+        date_from = request.form['from_date']
+        date_to = request.form['date_to']
+        print(f"Searching for customers from {date_from} to {date_to}")
+        return render_template('view_frequent_customers.html', msg=[True, f"Searching for agents from {date_from} to {date_to}"])
+    return render_template('view_frequent_customers.html', msg=[False]) 
 
 @app.route('/view_reports', methods=['GET', 'POST'])
 def view_reports():
-    return
+    img_url = url_for('static', filename='img0.jpg')
+    if request.method == 'POST' and request.form.get("Search"):
+        date_from = request.form['from_date']
+        date_to = request.form['date_to']
+        print(f"Searching for customers from {date_from} to {date_to}")
+        return render_template('view_frequent_customers.html', msg=[True, f"Searching for agents from {date_from} to {date_to}"], 
+                               filename=img_url)
+    return render_template('view_reports.html', msg=[False], filename=img_url)
 
 @app.route('/manage_staff', methods=['GET', 'POST'])
 def manage_staff():
-    return
+    if request.method == "POST":
+        username = request.form['username']
+        premission = request.form['permission']
+        print(f"User {username} has been granted {premission} by {session['username']}")
+        return render_template('manage_staff.html', msg=[True, f"User {username} has been granted {premission} by {session['username']}"])
+    return render_template('manage_staff.html', msg=[False])
 
 @app.route('/upload/<filename>')
 def send_file(filename):

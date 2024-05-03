@@ -8,6 +8,11 @@
 </head>
 <body style="font-family:Arial, Helvetica, sans-serif">
     <h1>Welcome to the Home Page</h1>
+    <script>
+        {% if msg[0]==True %}
+            alert('{{ msg[1] }}');
+        {% endif %}
+    </script>
     {% if session.logged_in %}
         <p>Hello, {{ session.username }}!</p>
         <a href="{{ url_for('logout') }}">Logout</a><br><br>
@@ -31,6 +36,7 @@
         {% elif session.role == 'Staff' %}
             <a href="{{ url_for('view_my_flights') }}">Manage flights</a><br>
             <a href="{{ url_for('create_new_flights') }}">Create new flights</a><br>
+            <a href="{{ url_for('change_status') }}">Change status of flights</a><br>
             <a href="{{ url_for('add_new_plane') }}">Add new plane</a><br>
             <a href="{{ url_for('add_new_airport') }}">Add new airport</a><br>
             <a href="{{ url_for('manage_agents') }}">Manage agents</a><br>

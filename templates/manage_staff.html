@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Staff</title>
+</head>
+<body style="font-family:Arial, Helvetica, sans-serif">
+    <script>
+        {% if msg[0]==True %}
+            alert('{{ msg[1] }}');
+        {% endif %}
+    </script>
+    <h1>Manage Staff</h1>
+    <table border="1">
+        <tr>
+            <th>Name</th>
+            <th>Username</th>
+            <th>Date of Birth</th>
+            <th>Admin</th>
+            <th>Operator</th>
+        </tr>
+    </table>
+
+    {% if session.admin %}
+    <h1>Grant permission to your staff</h1>
+    <form method="POST">
+        <label for="username">Username:</label>
+        <input type="username" id="username" name="username" required>
+        <label for="permission">Grant permission: </label>
+        <select name="permission" id="permission" required>
+            <option value="admin">Admin</option>
+            <option value="operator">Operator</option>
+        <input type="submit" value="Grant" name="Grant">
+    </form>
+
+    {% endif %}
+
+    <a href = "{{ url_for('home') }}" >Home</a>
+</body>

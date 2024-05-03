@@ -8,26 +8,34 @@
 </head>
 <body style="font-family:Arial, Helvetica, sans-serif">
     <h1>Register</h1>
-    <form action="{{ url_for('reg_staff') }}" method="post">
-        <label for="username">Username:</label><br>
-        <input type="text" id="username" name="username" value="{{ username }}" required><br>
+    <form method="post">
+        <label for="email">Email:</label><br>
+        <input type="email" id="email" name="email" value="{{ email }}" required readonly><br>
         <label for="password">Password:</label><br>
-        <input type="password" id="password" name="password" value="{{ password }}" required><br>
+        <input type="password" id="password" name="password" value="{{ password }}" required readonly><br>
+        <label for="username">Username:</label><br>
+        <input type="text" id="username" name="username" required><br>
         <label for="first_name">First Name:</label><br>
-        <input type="text" id="first_name" name="first_name" value="{{ request.form['first_name'] }}" required><br>
+        <input type="text" id="first_name" name="first_name" required><br>
         <label for="last_name">Last Name:</label><br>
-        <input type="text" id="last_name" name="last_name" value="{{ request.form['last_name'] }}" required><br>
+        <input type="text" id="last_name" name="last_name" required><br>
         <label for="dob">Date of Birth:</label><br>
-        <input type="date" id="dob" name="dob" value="{{ request.form['dob'] }}" required><br>
-        <label for="admin_premission">Admin Premission:</label><br>
-        <select id="admin_premission" name="admin_premission">
+        <input type="date" id="dob" name="dob" required><br>
+        <label for="admin_permission">Admin Premission:</label><br>
+        <select id="admin_permission" name="admin_permission">
             <option value="1">Yes</option>
             <option value="0">No</option>
         </select><br>
-        <label for="oper_premission">Operator Premission:</label><br>
-        <select id="oper_premission" name="oper_premission">
+        <label for="oper_permission">Operator Premission:</label><br>
+        <select id="oper_permission" name="oper_permission">
             <option value="1">Yes</option>
             <option value="0">No</option>
+        </select><br>
+        <label for="company" name="company">Select the company you work for: </label>
+        <select name="company" id="company" required>
+            {% for company in airlines %}
+                <option value="{{ company['IATA_code'] }}">{{ company["Airline_name"] }}</option>
+            {% endfor %}
         </select><br>
         <input type="submit" value="Register">
     </form>

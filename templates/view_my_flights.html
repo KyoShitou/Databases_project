@@ -11,9 +11,9 @@
     <h1>View my flights</h1>
     <form action="{{ url_for('view_my_flights') }}" method="post">
         <label for="departure_date_from">Departure Date from:</label>
-        <input type="date" id="departure_date_from" name="departure_date_from" >
+        <input type="date" id="departure_date_from" name="departure_date_from" value="{{ request.form['departure_date_from'] }} ">
         <label for="departure_date_to"> to:</label>
-        <input type="date" id="departure_date_to" name="departure_date_to" ><br>
+        <input type="date" id="departure_date_to" name="departure_date_to" value="{{ request.form['departure_date_to']}} "><br>
         <input type="submit" value="Search">
     </form>
 
@@ -30,17 +30,29 @@
             <th>Arrival Airport</th>
             <th>Arrival City</th>
         </tr>
+        {% for flight in flights %}
         <tr>
-            <td>Flight 1</td>
-            <td>12:00</td>
-            <td>14:00</td>
-            <td>On Time</td>
-            <td>100</td>
-            <td>YYZ</td>
-            <td>Toronto</td>
-            <td>LAX</td>
-            <td>Los Angeles</td>
+        <td> {{ flight['IATA_code'] }}{{ "%03d" | format(flight['flight_num']) }} </td>
+        <td> {{ flight['Departure_time'] }} </td>
+        <td> {{ flight['Arrival_time'] }} </td>
+        {% if flight['status_now'] == 'completed' %}
+            <td  style="color: grey;"> {{ flight['status_now'] }} </td>
+        {% elif flight['status_now'] == 'cancelled' %}
+            <td  style="color: red;"> {{ flight['status_now'] }} </td>
+        {% elif flight['status_now'] == 'upcoming' %}
+            <td  style="color: black;"> {{ flight['status_now'] }} </td>
+        {% elif flight['status_now'] == 'delayed' %}
+            <td  style="color: orange;"> {{ flight['status_now'] }} </td>
+        {% else %}
+            <td  style="color: green;"> {{ flight['status_now'] }} </td>
+        {% endif %}
+        <td> {{ flight['remaining_seats'] }} </td>
+        <td> {{ flight['Departure_Airport'] }} </td>
+        <td> {{flight['Departure_city']}} </td>
+        <td> {{flight['Arrival_Airport']}} </td>
+        <td> {{flight['Arrival_city']}} </td>
         </tr>
+        {% endfor %}
 
     </table>
     {% elif session.role == 'Agent' %}
@@ -56,20 +68,32 @@
             <th>Arrival Airport</th>
             <th>Arrival City</th>
         </tr>
+        {% for flight in flights %}
         <tr>
-            <td>Flight 1</td>
-            <td>12:00</td>
-            <td>14:00</td>
-            <td>On Time</td>
-            <td>100</td>
-            <td>YYZ</td>
-            <td>Toronto</td>
-            <td>LAX</td>
-            <td>Los Angeles</td>
+        <td> {{ flight['IATA_code'] }}{{ "%03d" | format(flight['flight_num']) }} </td>
+        <td> {{ flight['Departure_time'] }} </td>
+        <td> {{ flight['Arrival_time'] }} </td>
+        {% if flight['status_now'] == 'completed' %}
+            <td  style="color: grey;"> {{ flight['status_now'] }} </td>
+        {% elif flight['status_now'] == 'cancelled' %}
+            <td  style="color: red;"> {{ flight['status_now'] }} </td>
+        {% elif flight['status_now'] == 'upcoming' %}
+            <td  style="color: black;"> {{ flight['status_now'] }} </td>
+        {% elif flight['status_now'] == 'delayed' %}
+            <td  style="color: orange;"> {{ flight['status_now'] }} </td>
+        {% else %}
+            <td  style="color: green;"> {{ flight['status_now'] }} </td>
+        {% endif %}
+        <td> {{ flight['remaining_seats'] }} </td>
+        <td> {{ flight['Departure_Airport'] }} </td>
+        <td> {{flight['Departure_city']}} </td>
+        <td> {{flight['Arrival_Airport']}} </td>
+        <td> {{flight['Arrival_city']}} </td>
         </tr>
         <tr>
-            <td colspan="9">John Smith, Adolf Hitler</td>
+            <td colspan="9">{{flight["passengers"]}}</td>
         </tr>
+        {% endfor %}
 
     </table>
     {% elif session.role == 'Staff' %}
@@ -85,20 +109,32 @@
             <th>Arrival Airport</th>
             <th>Arrival City</th>
         </tr>
+        {% for flight in flights %}
         <tr>
-            <td>Flight 1</td>
-            <td>12:00</td>
-            <td>14:00</td>
-            <td>On Time</td>
-            <td>100</td>
-            <td>YYZ</td>
-            <td>Toronto</td>
-            <td>LAX</td>
-            <td>Los Angeles</td>
+        <td> {{ flight['IATA_code'] }}{{ "%03d" | format(flight['flight_num']) }} </td>
+        <td> {{ flight['Departure_time'] }} </td>
+        <td> {{ flight['Arrival_time'] }} </td>
+        {% if flight['status_now'] == 'completed' %}
+            <td  style="color: grey;"> {{ flight['status_now'] }} </td>
+        {% elif flight['status_now'] == 'cancelled' %}
+            <td  style="color: red;"> {{ flight['status_now'] }} </td>
+        {% elif flight['status_now'] == 'upcoming' %}
+            <td  style="color: black;"> {{ flight['status_now'] }} </td>
+        {% elif flight['status_now'] == 'delayed' %}
+            <td  style="color: orange;"> {{ flight['status_now'] }} </td>
+        {% else %}
+            <td  style="color: green;"> {{ flight['status_now'] }} </td>
+        {% endif %}
+        <td> {{ flight['remaining_seats'] }} </td>
+        <td> {{ flight['Departure_Airport'] }} </td>
+        <td> {{flight['Departure_city']}} </td>
+        <td> {{flight['Arrival_Airport']}} </td>
+        <td> {{flight['Arrival_city']}} </td>
         </tr>
         <tr>
-            <td colspan="9">John Smith, Adolf Hitler</td>
+            <td colspan="9">{{flight["passengers"]}}</td>
         </tr>
+        {% endfor %}
     
     </table>
     {% endif %}

@@ -8,13 +8,18 @@
 </head>
 <body style="font-family:Arial, Helvetica, sans-serif">
     <h1>Register</h1>
-    <form action="{{ url_for('reg_agent') }}" method="post">
-        <label for="username">Username:</label><br>
-        <input type="text" id="username" name="username" value="{{ request.form['username'] }}" required><br>
+    <form method="post">
+        <label for="email">Username:</label><br>
+        <input type="email" id="email" name="email" value="{{ email }}" required readonly><br>
         <label for="password">Password:</label><br>
-        <input type="password" id="password" name="password" value="{{ request.form['password'] }}" required><br>
-        <label for="email">Email:</label><br>
-        <input type="email" id="email" name="email" value="{{ request.form['email'] }}" required><br>
+        <input type="password" id="password" name="password" value="{{ password }}" required readonly><br>
+        <label for="username">Username:</label><br>
+        <input type="text" id="username" name="username" required><br>
+        <label for="airlines">Select the airlines that you works for:</label><br>
+        {% for airline in airlines %}
+            <input type="checkbox" id="{{ airline['IATA_code'] }}" name="{{airline['IATA_code']}}" value="{{ airline['Airline_name'] }}">
+            <label for="{{ airline['IATA_code'] }}">{{ airline['Airline_name'] }}</label><br>
+        {% endfor %}
         <input type="submit" value="Register">
     </form>
 </body>

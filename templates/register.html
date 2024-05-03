@@ -8,9 +8,15 @@
 </head>
 <body style="font-family:Arial, Helvetica, sans-serif">
     <h1>Register</h1>
+    <script>
+        {% if msg[0]==True %}
+            alert('{{ msg[1] }}');
+        {% endif %}
+    </script>
+    
     <form action="{{ url_for('register') }}" method="post">
-        <label for="username">Username:</label><br>
-        <input type="text" id="username" name="username" required><br>
+        <label for="email">Email:</label><br>
+        <input type="email" id="email" name="email" required><br>
         <label for="password">Password:</label><br>
         <input type="password" id="password" name="password" required><br>
         <label for="role" name="role">Role:</label><br>

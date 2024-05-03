@@ -14,13 +14,13 @@
             alert('{{ error[1] }}');
         {% endif %}
     </script>
-    <form action="{{ url_for('reg_customer') }}" method="post">
-        <label for="username">Username:</label><br>
-        <input type="text" id="username" name="username" value="{{ username }}" required><br>
-        <label for="password">Password:</label><br>
-        <input type="password" id="password" name="password" value="{{ password }}" required><br>
+    <form method="post">
         <label for="email">Email:</label><br>
-        <input type="email" id="email" name="email"  required><br>
+        <input type="email" id="email" name="email" value="{{ email }}" required readonly><br>
+        <label for="password">Password:</label><br>
+        <input type="password" id="password" name="password" value="{{ password }}" required readonly><br>
+        <label for="name">Name:</label><br>
+        <input type="text" id="name" name="name"  required><br>
 
         <label for="address">Address:</label><br>
         <textarea id="address" name="address" rows="4" cols="50" required></textarea><br>
@@ -28,6 +28,9 @@
         <input type="text" id="city" name="city" required><br>
         <label for="state">State:</label><br>
         <input type="text" id="state" name="state" required><br>
+
+        <label for="cellphone">Cellphone:</label><br>
+        <input type="text" id="cellphone" name="cellphone" required><br>
 
         <label for="passport">Passport:</label><br>
         <input type="text" id="passport" name="passport" required><br>
@@ -41,7 +44,6 @@
         <label for="dob">Date of Birth:</label><br>
         <input type="date" id="dob" name="dob" required><br>
 
-        <input type="hidden" name="role" value="user">
         <input type="submit" value="Register">
     </form>
 </body>

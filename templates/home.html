@@ -8,11 +8,13 @@
 </head>
 <body style="font-family:Arial, Helvetica, sans-serif">
     <h1>Welcome to the Home Page</h1>
-    <script>
-        {% if msg[0]==True %}
+    
+    {% if msg[0]==True %}
+        <script>
             alert('{{ msg[1] }}');
-        {% endif %}
-    </script>
+        </script>
+    {% endif %}
+
     {% if session.logged_in %}
         <p>Hello, {{ session.username }}!</p>
         <a href="{{ url_for('logout') }}">Logout</a><br><br>

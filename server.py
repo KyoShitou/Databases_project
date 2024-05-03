@@ -1,101 +1,230 @@
 from flask import Flask, render_template, request, redirect, url_for, session, send_from_directory
+from datetime import datetime
+import pymysql.cursors
+import utils
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key_here'
 
-# Dummy user database (replace with a real database in a production environment)
-users = {
-    'user1': {
-        'username': 'user1',
-        'password': 'password1',
-        'role': 'Customer'
-    },
-    'user2': {
-        'username': 'user2',
-        'password': 'password2',
-        'role': 'Agent'
-    },
-    'user3': {
-        'username': 'user3',
-        'password': 'password3',
-        'role': 'Staff'
-    },
-    'user4': {
-        'username': 'user4',
-        'password': 'password4',
-        'role': 'Staff'
-    }
-}
+conn = pymysql.connect(host="localhost", user="root", password="", db="Airplane_Management", charset="utf8mb4", cursorclass=pymysql.cursors.DictCursor)
+
 
 @app.route('/', endpoint='home')
 def home():
     return render_template('home.html', msg=[False])
 
 @app.route('/login', methods=['GET', 'POST'])
+
 def login():
     if request.method == 'POST':
-        username = request.form['username']
+        username = request.form['email']
         password = request.form['password']
-        if username in users and users[username]['password'] == password:
+        
+        cursor = conn.cursor()
+        cursor.execute(f"SELECT * FROM Customer WHERE email='{username}' AND password='{password}'")
+        result = cursor.fetchone()
+        if result:
             session['logged_in'] = True
-            session['username'] = username
-            session['role'] = users[username]['role']
-            if session['role'] == 'Staff' and session['username'] == 'user3':
-                session['admin'] = True
-                session['operator'] = True
-            elif session['role'] == 'Staff' and session['username'] == 'user4':
-                session['admin'] = False
-                session['operator'] = False
-            
-            print(f"User {username} logged in")
+            session['username'] = result['name']
+            session['role'] = 'Customer'
+            session['email'] = username
+            print(f"Customer {username} logged in")
+            cursor.close()
             return redirect(url_for('home'))
-
-            
         else:
-            return 'Invalid username or password'
-    return render_template('login.html')
+            cursor.execute(f"SELECT * FROM BookingAgent WHERE email='{username}' AND password='{password}'")
+            result = cursor.fetchone()
+            if result:
+                session['logged_in'] = True
+                session['username'] = result['username']
+                session['role'] = 'Agent'
+                session['email'] = username
+                print(f"Agent {username} logged in")
+                cursor.close()
+                return redirect(url_for('home'))
+            else:
+                cursor.execute(f"SELECT * FROM AirlineStaff WHERE email='{username}' AND password='{password}'")
+                result = cursor.fetchone()
+                if result:
+                    session['logged_in'] = True
+                    session['username'] = result['aStaff_username']
+                    session['role'] = 'Staff'
+                    session['email'] = username
+                    if result['Admin_perm'] == 1:
+                        session['admin'] = True
+                    else:
+                        session['admin'] = False
+                    
+                    if result['Oper_perm'] == 1:
+                        session['operator'] = True
+                    else:
+                        session['operator'] = False
+                    cursor.close()
+                    print(f"Staff {username} ({session['admin']}, {session['operator']})logged in")
+                    return redirect(url_for('home'))
+                else:
+                    cursor.close()
+                    print(f"Invalid username or password, {username}, {password}")
+                    return render_template('login.html', msg=[True, "Invalid username or password"])
+    return render_template('login.html', msg=[False])
+
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        username = request.form['username']
+        username = request.form['email']
         password = request.form['password']
         role = request.form['role']
-        if username in users:
-            return 'Username already exists'
+        
+        cursor = conn.cursor()
         
         if role == "Customer":
-            return redirect(url_for('reg_customer', username=username, password=password))
+            cursor.execute(f"SELECT * FROM Customer WHERE email='{username}'")
+            result = cursor.fetchone()
+            if result:
+                cursor.close()
+                return render_template('register.html', msg=[True, "Username already exists"])
+            else:
+                cursor.close()
+                print(url_for('reg_customer', email=username, password=password))
+                return redirect(url_for('reg_customer', email=username, password=password))
         elif role == "Agent":
-            return redirect(url_for('reg_agent', username=username, password=password))
+            cursor.execute(f"SELECT * FROM BookingAgent WHERE email='{username}'")
+            result = cursor.fetchone()
+            if result:
+                cursor.close()
+                return render_template('register.html', msg=[True, "Username already exists"])
+            else:
+                cursor.close()
+                return redirect(url_for('reg_agent', email=username, password=password))
         else:
-            return redirect(url_for('reg_staff', username=username, password=password))
-    return render_template('register.html')
+            cursor.execute(f"SELECT * FROM AirlineStaff WHERE email='{username}'")
+            result = cursor.fetchone()
+            if result:
+                cursor.close()
+                return render_template('register.html', msg=[True, "Username already exists"])
+            else:
+                cursor.close()
+            return redirect(url_for('reg_staff', email=username, password=password))
+    return render_template('register.html', msg=[False])
 
-@app.route('/reg_customer?username=<username>&password=<password>', methods=['GET', 'POST'])
-def reg_customer(username, password):
-    if username=="customer25":
-        return render_template('reg_customer.html', username='', password='', error=[True, "Username already exists"])
-    return render_template('reg_customer.html', username=username, password=password, error=False)
+@app.route('/reg_customer?email=<email>&password=<password>', methods=['GET', 'POST'])
+def reg_customer(email, password):
+    if request.method == "POST":
+        name = request.form["name"]
+        address = request.form["address"]
+        city = request.form["city"]
+        state = request.form["state"]
+        phone = request.form["cellphone"]
+        passport_number = request.form["passport"]
+        passport_expiration = request.form["expiry"]
+        passport_country = request.form["passport_country"]
+        dob = request.form["dob"]
 
-@app.route('/reg_agent?username=<username>&password=<password>', methods=['GET', 'POST'])
-def reg_agent(username, password):
-    return render_template('reg_agent.html', username=username, password=password)
+        today = datetime.now().date()
 
-@app.route('/reg_staff?username=<username>&password=<password>', methods=['GET', 'POST'])
-def reg_staff(username, password):
-    return render_template('reg_staff.html', username=username, password=password)
+        if datetime.strptime(passport_expiration, "%Y-%m-%d").date() < today:
+            return render_template('reg_customer.html', email=email, password=password, error=[True, "Passport has expired"])
+
+        if datetime.strptime(dob, "%Y-%m-%d").date() > today:
+            return render_template('reg_customer.html', email=email, password=password, error=[True, "Invalid date of birth"])
+        
+        cursor = conn.cursor()
+        cursor.execute(f"""INSERT INTO Customer VALUES (
+                       "{email}", "{name}", "{password}", "{address}", "{city}", "{state}"
+                       , "{phone}", "{passport_number}", "{passport_expiration}", "{passport_country}", "{dob}")
+                       """)
+        conn.commit()
+        cursor.close()
+        print(f"Customer {email} registered")
+        session['logged_in'] = True
+        session['username'] = name
+        session['email'] = email
+        session['role'] = 'Customer'
+        return redirect(url_for('home'))
+        # Continue with the registration process
+    return render_template('reg_customer.html', email=email, password=password, error=[False])
+
+@app.route('/reg_agent?email=<email>&password=<password>', methods=['GET', 'POST'])
+def reg_agent(email, password):
+    airlines = utils.retrieve_airlines(conn)
+    workfor = []
+    if request.method == "POST":
+        username = request.form['username']
+        cursor = conn.cursor()
+        for airline in airlines:
+            try:
+                print(f"Tried {airline['IATA_code']}")
+                request.form[airline['IATA_code']]
+                workfor.append(airline)
+            except:
+                print(f"Failed {airline['IATA_code']}")
+                continue
+
+        print(workfor)
+        cursor.execute(f"INSERT INTO BookingAgent (email, password, username) VALUES ('{email}', '{password}', '{username}')")
+
+        for airline in workfor:
+            cursor.execute(f"INSERT INTO Agent_work_for VALUES ('{email}', '{airline['IATA_code']}')")
+        conn.commit()
+        cursor.close()
+
+        print(f"Agent {email} registered")
+        session['logged_in'] = True
+        session['email'] = email
+        session['username'] = username
+        session['role'] = 'Agent'
+        return redirect(url_for('home'))
+        
+    return render_template('reg_agent.html', email=email, password=password, airlines=airlines)
+
+@app.route('/reg_staff?email=<email>&password=<password>', methods=['GET', 'POST'])
+def reg_staff(email, password):
+    airlines = utils.retrieve_airlines(conn)
+    if request.method == "POST":
+        print(request.form)
+        username = request.form['username']
+        first_name = request.form['first_name']
+        last_name = request.form['last_name']
+        date_of_birth = request.form['dob']
+        admin_perm = request.form['admin_permission']
+        oper_perm = request.form['oper_permission']
+        airline = request.form['company']
+
+        cursor = conn.cursor()
+        cursor.execute(f"""INSERT INTO AirlineStaff VALUES (
+                       "{username}", "{email}", "{password}", "{first_name}", "{last_name}", "{date_of_birth}",
+                          "{admin_perm}", "{oper_perm}", "{airline}") """)
+        conn.commit()
+        cursor.close()
+
+        session['logged_in'] = True
+        session['email'] = email
+        session['username'] = username
+        session['role'] = 'Staff'
+        session['admin'] = False
+        session['operator'] = False
+        if admin_perm == "1":
+            session['admin'] = True
+        if oper_perm == "1":
+            session['operator'] = True
+
+        return redirect(url_for('home'))
+    return render_template('reg_staff.html', email=email, password=password, airlines=airlines)
 
 @app.route('/logout')
 def logout():
     session.pop('logged_in', None)
+    session.pop('email', None)
     session.pop('username', None)
+    session.pop('role', None)
     return redirect(url_for('home'))
-
 
 @app.route('/search_flights', methods=['GET', 'POST'])
 def search_flights():
-    print("search_flights")
+    airport_city_dict, airport_lst, city_lst = utils.retrieve_airports_and_city(conn)
+    flights = utils.retrieve_flights(conn)
+    print(flights)
     if request.method == 'POST' and request.form.get("Search"):
         departure_airport = request.form['departure_airport']
         departure_city = request.form['departure_city']
@@ -104,21 +233,58 @@ def search_flights():
         departure_date_from = request.form['departure_date_from']
         departure_date_to = request.form['departure_date_to']
         print(f"Searching for flights from {departure_airport} to {arrival_airport} from {departure_date_from} to {departure_date_to}")
-        return render_template('search_flights.html', error=[False])
+        flights = utils.retrieve_flights(conn, dept_ap=departure_airport, arri_ap=arrival_airport, dept_city=departure_city, arri_city=arrival_city, dept_time_from=departure_date_from, dept_time_to=departure_date_to)
+
+        return render_template('search_flights.html', error=[False],
+                               airport_lst=airport_lst, city_lst=city_lst, flights=flights)
     
     if request.method == 'POST' and request.form.get("Book"):
         if session['role'] == 'Customer':
             flight_number = request.form['flight_number']
             msg = f"Customer {session['username']} booked flight {flight_number}"
+
+            cursor = conn.cursor()
+                           
+
+            cursor.execute(f"INSERT INTO Ticket (flight_num, IATA_code) VALUES ({flight_number[2:]}, '{flight_number[:2]}')")
+            cursor.execute(f"SELECT MAX(ticket_id) FROM Ticket WHERE flight_num={flight_number[2:]} AND IATA_code='{flight_number[:2]}'")
+            ticket_id = cursor.fetchone()['MAX(ticket_id)']
+            cursor.execute(f"""
+INSERT INTO purchase VALUES(
+                           {ticket_id}, '{session['email']}', NULL, NOW())
+                           """)
+            conn.commit()
+            cursor.close()
+            
             print(f"Customer {session['username']} booked flight {flight_number}")
+
         else:
             flight_number = request.form['flight_number']
-            customer_email = request.form['customer_email']
+            customer_email = request.form['email']
+
+            cursor = conn.cursor()
+            cursor.execute(f"SELECT * FROM Customer WHERE email='{customer_email}'")
+            result = cursor.fetchone()
+            if result == None:
+                cursor.close()
+                return render_template('search_flights.html', error=[True, f"Customer {customer_email} does not exist"], 
+                               airport_lst=airport_lst, city_lst=city_lst, flights=flights)
+            cursor.execute(f"INSERT INTO Ticket (flight_num, IATA_code) VALUES ({flight_number[2:]}, '{flight_number[:2]}')")
+            cursor.execute(f"SELECT MAX(ticket_id) FROM Ticket WHERE flight_num={flight_number[2:]} AND IATA_code='{flight_number[:2]}'")
+            ticket_id = cursor.fetchone()['MAX(ticket_id)']
+            cursor.execute(f"INSERT INTO purchase VALUES({ticket_id}, '{customer_email}', '{session['email']}', NOW())")
+            conn.commit()
+            cursor.close()
+            
             msg = f"Agent {session['username']} booked flight {flight_number} for customer {customer_email}"
             print(f"Agent {session['username']} booked flight {flight_number} for customer {customer_email}")
-        return render_template('search_flights.html', error=[True, msg])
 
-    return render_template('search_flights.html', error=[False])
+
+        return render_template('search_flights.html', error=[True, msg], 
+                               airport_lst=airport_lst, city_lst=city_lst, flights=flights)
+
+    return render_template('search_flights.html', error=[False], 
+                           airport_lst=airport_lst, city_lst=city_lst, flights=flights)
 
 @app.route('/book_flights', methods=['GET', 'POST'])
 def book_flights():
@@ -134,7 +300,26 @@ def book_flights():
 
 @app.route('/view_my_flights', methods=['GET', 'POST'])
 def view_my_flights(): 
-    return render_template('view_my_flights.html')
+    if session['role'] == 'Customer':
+        flights = utils.retrieve_flights_with_passengers(conn, customer=session['email'])
+    elif session['role'] == 'Agent':
+        flights = utils.retrieve_flights_with_passengers(conn, agent=session['email'])
+    else:
+        flights = utils.retrieve_flights_with_passengers(conn, staff=session['email'])
+
+    if request.method == 'POST':
+        from_date = request.form['departure_date_from']
+        to_date = request.form['departure_date_to']
+        print(f"Searching for flights from {from_date} to {to_date}")
+        if session['role'] == 'Customer':
+            flights = utils.retrieve_flights_with_passengers(conn, customer=session['email'], date_from=from_date, date_to=to_date)
+        elif session['role'] == 'Agent':
+            flights = utils.retrieve_flights_with_passengers(conn, agent=session['email'], date_from=from_date, date_to=to_date)
+        else:
+            flights = utils.retrieve_flights_with_passengers(conn, staff=session['email'], date_from=from_date, date_to=to_date)
+        
+        return render_template('view_my_flights.html', start_date=from_date, end_date=to_date, flights=flights)
+    return render_template('view_my_flights.html', flights=flights)
 
 # @app.route('/buy_tickets', methods=['GET', 'POST'])
 # def buy_tickets():

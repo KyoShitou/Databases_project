@@ -8,7 +8,7 @@
 </head>
 
 <body style="font-family:Arial, Helvetica, sans-serif">
-    <h1>View my flights</h1>
+    <h1>View top customers</h1>
     <form action="{{ url_for('view_top_customers') }}" method="post">
         <label for="departure_date_from">Search Date from:</label>
         <input type="date" id="departure_date_from" name="departure_date_from" value="{{start_date}}">

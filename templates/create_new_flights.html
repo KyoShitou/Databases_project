@@ -9,24 +9,36 @@
 
 <body style="font-family:Arial, Helvetica, sans-serif">
     <h1>Create New Flight</h1>
-    <script>
-        {% if msg[0]==True %}
+    {% if msg[0]==True %}
+        <script>
             alert('{{ msg[1] }}');
-        {% endif %}
-    </script>
+        </script>
+    {% endif %}
     <form method="post">
         <label for="departure_airport">Departure Airport:</label>
-        <input type="text" id="departure_airport" name="departure_airport">
+        <select name="departure_airport" id="departure_airport" value="{{ request.form['departure_airport'] }}">
+            {% for airport in airport_lst %}
+                <option value="{{ airport }}">{{ airport }}</option>
+            {% endfor %}
+        </select><br>
         <label for="arrival_airport">Arrival Airport:</label>
-        <input type="text" id="arrival_airport" name="arrival_airport">
+        <select name="arrival_airport" id="arrival_airport">
+        {% for airport in airport_lst %}
+            <option value="{{ airport }}">{{ airport }}</option>
+        {% endfor %}
+        </select><br>
         <label for="departure_time">Departure Time:</label>
-        <input type="datetime-local" id="departure_time" name="departure_time">
+        <input type="datetime-local" id="departure_time" name="departure_time" required><br>
         <label for="arrival_time">Arrival Time:</label>
-        <input type="datetime-local" id="arrival_time" name="arrival_time">
+        <input type="datetime-local" id="arrival_time" name="arrival_time" required><br>
         <label for="price">Price:</label>
-        <input type="number" id="price" name="price">
+        <input type="number" id="price" name="price" required><br>
         <label for="Airplane_id">Airplane ID:</label>
-        <input type="number" id="Airplane_id" name="Airplane_id">
+        <select name="Airplane_id" id="Airplane_id">
+            {% for airplane in airplane_lst %}
+                <option value="{{ airplane['Airplane_id'] }}">{{ airplane["Airplane_id"] }}, seats: {{ airplane["seats"] }}</option>
+            {% endfor %}
+        </select>
         <input type="submit" value="Create" name="Create">
     </form>
 

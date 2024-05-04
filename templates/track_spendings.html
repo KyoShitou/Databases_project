@@ -11,11 +11,11 @@
     <h1>View my flights</h1>
     <form action="{{ url_for('track_spendings') }}" method="post">
         <label for="departure_date_from">Departure Date from:</label>
-        <input type="date" id="departure_date_from" name="departure_date_from" >
+        <input type="month" id="departure_date_from" name="departure_date_from" value="{{ request.form['departure_date_from'] }}">
         <label for="departure_date_to"> to:</label>
-        <input type="date" id="departure_date_to" name="departure_date_to" ><br>
+        <input type="month" id="departure_date_to" name="departure_date_to" value="{{ request.form['departure_date_to'] }}"><br>
         <input type="submit" value="Search">
     </form>
-    <img src="{{ filename }}" >
+    <img src="{{ filename }}" ><br>
     <a href="{{ url_for('home') }}">Home</a>
 </body>

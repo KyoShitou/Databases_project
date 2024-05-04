@@ -7,12 +7,12 @@
     <title>Change Flight Information</title>
 </head>
 <body style="font-family:Arial, Helvetica, sans-serif">
-    <h1>Input new status of a flight</h1>
-    <script>
-        {% if msg[0]==True %}
+    <h1>Current flights</h1>
+    {% if msg[0]==True %}
+        <script>
             alert('{{ msg[1] }}');
-        {% endif %}
-    </script>
+        </script>
+    {% endif %}
 
     <table border="1">
         <tr>
@@ -26,28 +26,49 @@
             <th>Arrival Airport</th>
             <th>Arrival City</th>
         </tr>
+        {% for flight in flights %}
         <tr>
-            <td>Flight 1</td>
-            <td>12:00</td>
-            <td>14:00</td>
-            <td>On Time</td>
-            <td>100</td>
-            <td>YYZ</td>
-            <td>Toronto</td>
-            <td>LAX</td>
-            <td>Los Angeles</td>
+        <td> {{ flight['IATA_code'] }}{{ "%03d" | format(flight['flight_num']) }} </td>
+        <td> {{ flight['Departure_time'] }} </td>
+        <td> {{ flight['Arrival_time'] }} </td>
+        {% if flight['status_now'] == 'completed' %}
+            <td  style="color: grey;"> {{ flight['status_now'] }} </td>
+        {% elif flight['status_now'] == 'cancelled' %}
+            <td  style="color: red;"> {{ flight['status_now'] }} </td>
+        {% elif flight['status_now'] == 'upcoming' %}
+            <td  style="color: black;"> {{ flight['status_now'] }} </td>
+        {% elif flight['status_now'] == 'delayed' %}
+            <td  style="color: orange;"> {{ flight['status_now'] }} </td>
+        {% else %}
+            <td  style="color: green;"> {{ flight['status_now'] }} </td>
+        {% endif %}
+        <td> {{ flight['remaining_seats'] }} </td>
+        <td> {{ flight['Departure_Airport'] }} </td>
+        <td> {{flight['Departure_city']}} </td>
+        <td> {{flight['Arrival_Airport']}} </td>
+        <td> {{flight['Arrival_city']}} </td>
         </tr>
+        {% endfor %}
 
     </table>
 
+    <h2>Change status of the flight</h2>
     <form method="post">
         <label for="flight_id">Flight ID:</label>
-        <input type="number" id="flight_id" name="flight_id">
+        <input type="text" id="flight_id" name="flight_id">
         <label for="new_departure_time">New Departure Time:</label>
         <input type="datetime-local" id="new_departure_time" name="new_departure_time">
         <label type="new_arrival_time">New Arrival Time:</label>
         <input type="datetime-local" id="new_arrival_time" name="new_arrival_time">
         <input type="submit" value="Change" name="Change">
-    </form>
+    </form><br>
+
+    <h2>Or cancel the flight</h2>
+    <form method="post">
+        <label for="flight_id">Flight ID:</label>
+        <input type="text" id="flight_id" name="flight_id">
+        <input type="submit" value="Cancel" name="Cancel">
+    </form><br>
+    <a href="{{ url_for('home') }}">Home</a>
 
 </body>

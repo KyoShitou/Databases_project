@@ -8,11 +8,11 @@
 </head>
 <body style="font-family:Arial, Helvetica, sans-serif">
     <h1>Input information of a new airport</h1>
-    <script>
-        {% if msg[0]==True %}
+    {% if msg[0]==True %}
+        <script>
             alert('{{ msg[1] }}');
-        {% endif %}
-    </script>
+        </script>   
+    {% endif %}
 
     <form method="post">
         <label for="airport_name">Airport IATA code:</label>

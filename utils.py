@@ -3,7 +3,16 @@ import datetime
 import os
 from copy import deepcopy
 
-
+def gen_date_restriction(date_from, date_to, name="date"):
+    if date_from and date_to:
+        date_restriction = f"AND {name} BETWEEN '{date_from}' AND '{date_to}'"
+    elif date_from:
+        date_restriction = f"AND {name} >= '{date_from}'"
+    elif date_to:
+        date_restriction = f"AND {name} <= '{date_to}'"
+    else:
+        date_restriction = ""
+    return date_restriction
 
 def retrieve_airlines(conn):
     cursor = conn.cursor()
@@ -393,3 +402,225 @@ VALUES ('{IATA_code}', '{dept_time}', '{arri_time}', {price}, 'upcoming', {plane
     conn.commit()
     cursor.close()
     return 0
+
+def retrieve_agents(conn, airline, date_from=None, date_to=None):
+
+    if date_from and date_to:
+        date_restriction = f"AND date BETWEEN '{date_from}' AND '{date_to}'"
+    elif date_from:
+        date_restriction = f"AND date >= '{date_from}'"
+    elif date_to:
+        date_restriction = f"AND date <= '{date_to}'"
+    else:
+        date_restriction = ""
+
+    cursor = conn.cursor()
+    cursor.execute(f"""SELECT email, username 
+                   FROM BookingAgent JOIN Agent_work_for ON BookingAgent.email=Agent_work_for.agent_email
+                   WHERE IATA_code='{airline}'""")
+    data = cursor.fetchall()
+    for agent in data:
+        email = agent["email"]
+        cursor.execute(f"""SELECT COUNT(*) as total
+                       FROM purchase
+                       WHERE agent_email='{email}' {date_restriction}""")
+        agent["tickets"] = cursor.fetchone()["total"]
+        cursor.execute(f"""SELECT SUM(price) as total
+                          FROM purchase NATURAL JOIN ticket NATURAL JOIN flight
+                          WHERE agent_email='{email}' {date_restriction}""")
+        comm = cursor.fetchone()["total"]
+        if comm:
+            agent["commission"] = float(comm) * 0.1
+        else:
+            agent["commission"] = 0
+        
+    cursor.close()
+    data.sort(key=lambda x : x["commission"], reverse=True)
+    return data
+
+def retrieve_frequent_customers(conn, airline, date_from=None, date_to=None):
+    if date_from and date_to:
+        date_restriction = f"AND date BETWEEN '{date_from}' AND '{date_to}'"
+    elif date_from:
+        date_restriction = f"AND date >= '{date_from}'"
+    elif date_to:
+        date_restriction = f"AND date <= '{date_to}'"
+    else:
+        date_restriction = ""
+
+    cursor = conn.cursor()
+    cursor.execute(f"""SELECT email, name, date_of_birth
+                   FROM Customer
+                   WHERE email IN (
+                        SELECT customer_email
+                        FROM purchase NATURAL JOIN ticket
+                        WHERE IATA_code='{airline}' {date_restriction}
+                   )""")
+    data = cursor.fetchall()
+    for customer in data:
+        cursor.execute(f"""SELECT COUNT(*) as total
+                       FROM purchase NATURAL JOIN ticket
+                       WHERE customer_email='{customer["email"]}' AND IATA_code='{airline}' {date_restriction}""")
+        customer["tickets"] = cursor.fetchone()["total"]
+        cursor.execute(f"""SELECT flight_num, IATA_code
+                       FROM purchase NATURAL JOIN ticket
+                       WHERE customer_email='{customer["email"]}' AND IATA_code='{airline}' {date_restriction}""")
+        flights = cursor.fetchall()
+        flights = [f'{f["IATA_code"]}{f["flight_num"]:03}' for f in flights]
+        flights = ', '.join(flights)
+        customer["flights"] = flights
+    cursor.close()
+
+    data.sort(key=lambda x : x["tickets"], reverse=True)
+    return data
+
+def ticket_info(conn, airline, date_from=None, date_to=None):
+    '''ticket_info -> (ttl_tickets, [revenue_per_month])'''
+    if date_to.month in (1, 3, 5, 7, 8, 10, 12):
+        date_restriction = gen_date_restriction(f"{date_from}-01", f"{date_to}-31")
+    elif date_to.month in (4, 6, 8, 9, 11):
+        date_restriction = gen_date_restriction(f"{date_from}-01", f"{date_to}-30")
+    else:
+        date_restriction = gen_date_restriction(f"{date_from}-01", f"{date_to}-28")
+    print(date_restriction)
+    cursor = conn.cursor()
+    cursor.execute(f"""SELECT COUNT(*) AS total
+                    FROM ticket NATURAL JOIN purchase
+                    WHERE IATA_code='{airline}' {date_restriction}""")
+    ttl_tickets = cursor.fetchone()["total"]
+    revenue_per_month = []
+    date_from_iter = month(f"{date_from.year}-{date_from.month:02d}")
+    while date_from_iter <= date_to:
+        cursor.execute(f"""SELECT SUM(price) AS revenue
+                        FROM purchase NATURAL JOIN ticket NATURAL JOIN flight
+                        WHERE IATA_code='{airline}' AND date LIKE '{date_from_iter}%'""")
+        revenue = cursor.fetchone()["revenue"]
+        if revenue == None:
+            revenue = 0
+        revenue_per_month.append(revenue)
+        date_from_iter.addmonth(1)
+    cursor.close()
+    return ttl_tickets, revenue_per_month
+
+
+def revenue_partition(conn, airline, date_from=None, date_to=None):
+    '''revenue_partition -> (total_direct_sales, total_agent_sales)'''
+    if date_to.month in (1, 3, 5, 7, 8, 10, 12):
+        date_restriction = gen_date_restriction(f"{date_from}-01", f"{date_to}-31")
+    elif date_to.month in (4, 6, 8, 9, 11):
+        date_restriction = gen_date_restriction(f"{date_from}-01", f"{date_to}-30")
+    else:
+        date_restriction = gen_date_restriction(f"{date_from}-01", f"{date_to}-28")
+    cursor = conn.cursor()
+    cursor.execute(f"""SELECT SUM(price) AS total
+                    FROM purchase NATURAL JOIN ticket NATURAL JOIN flight
+                    WHERE IATA_code='{airline}' AND agent_email IS NULL {date_restriction}""")
+    total_direct_sales = cursor.fetchone()["total"]
+    cursor.execute(f"""SELECT SUM(price) AS total
+                    FROM purchase NATURAL JOIN ticket NATURAL JOIN flight
+                    WHERE IATA_code='{airline}' AND agent_email IS NOT NULL {date_restriction}""")
+    total_agent_sales = cursor.fetchone()["total"]
+    cursor.close()
+    return total_direct_sales, total_agent_sales
+
+def top_destination(conn, airline, date_from=None, date_to=None):
+    '''top_destination -> ((destination1, destination2, destination3), (freq1, freq2, freq3))'''
+    if date_to.month in (1, 3, 5, 7, 8, 10, 12):
+        date_restriction = gen_date_restriction(f"{date_from}-01", f"{date_to}-31", name="Departure_time")
+    elif date_to.month in (4, 6, 8, 9, 11):
+        date_restriction = gen_date_restriction(f"{date_from}-01", f"{date_to}-30", name="Departure_time")
+    else:
+        date_restriction = gen_date_restriction(f"{date_from}-01", f"{date_to}-28", name="Departure_time")
+    cursor = conn.cursor()
+    cursor.execute(f"""SELECT Arrival_Airport, COUNT(*) AS freq
+                    FROM flight
+                    WHERE IATA_code='{airline}' {date_restriction}
+                    GROUP BY Arrival_Airport
+                    ORDER BY freq DESC
+                    LIMIT 3""")
+    destinations = []
+    frequencies = []
+    for row in cursor.fetchall():
+        destinations.append(row["Arrival_Airport"])
+        frequencies.append(row["freq"])
+    cursor.close()
+    return destinations, frequencies
+
+def view_report(conn, airline, date_from=None, date_to=None):
+    if date_from is None and date_to is None:
+        date_from = datetime.datetime.now()
+        date_to = datetime.datetime.now() - datetime.timedelta(days=365)
+    elif date_from is None:
+        date_from = datetime.datetime.now() - datetime.timedelta(days=365)
+    elif date_to is None:
+        date_to = datetime.datetime.now()
+
+    print(date_from, date_to)
+
+    date_from = month(f"{date_from.year}-{date_from.month:02d}")
+    date_from_iter = month(f"{date_from.year}-{date_from.month:02d}")
+    date_to = month(f"{date_to.year}-{date_to.month:02d}")
+
+    months = []
+    while date_from_iter <= date_to:
+        months.append(str(date_from_iter))
+        date_from_iter.addmonth(1)
+
+        
+    ttl_tickets, revenue_per_month = ticket_info(conn, airline, date_from, date_to)
+    ttl_direct_sale, ttl_agent_sale = revenue_partition(conn, airline, date_from, date_to)
+    destinations, frequencies = top_destination(conn, airline, date_from, date_to)
+
+    print(date_from, date_to)
+    print(ttl_tickets, revenue_per_month, ttl_direct_sale, ttl_agent_sale, destinations, frequencies)
+    
+    # Plot 1: Bar chart of revenue per month
+    plt.subplot(3, 1, 1)
+    plt.bar(range(len(revenue_per_month)), revenue_per_month)
+    plt.xlabel('Month')
+    plt.ylabel('Revenue')
+    plt.xticks(range(len(revenue_per_month)), months, rotation=45)
+    plt.title('Revenue per Month')
+
+    # Plot 2: Pie chart of total direct sales vs. total agent sales
+    plt.subplot(3, 1, 2)
+    labels = ['Direct Sales', 'Agent Sales']
+    sizes = [ttl_direct_sale, ttl_agent_sale]
+    plt.pie(sizes, labels=labels, autopct='%1.1f%%')
+    plt.gcf().set_size_inches(8, 8)
+    plt.title('Total Direct Sales vs. Total Agent Sales')
+
+    # Plot 3: Pie chart of frequencies annotated by destinations
+    plt.subplot(3, 1, 3)
+    plt.pie(frequencies, labels=destinations, autopct='%1.1f%%')
+    plt.title('Frequencies by Destinations')
+
+    # Adjust the layout to avoid overlapping
+    plt.tight_layout()
+
+    # Show the plots
+    filename = str(datetime.datetime.now())
+    # Get the current directory of the script
+    current_directory = os.path.dirname(os.path.realpath(__file__))
+
+    # Create the path to the static folder
+    static_folder_path = os.path.join(current_directory, 'static')
+
+    # Create the static folder if it doesn't exist
+    if not os.path.exists(static_folder_path):
+        os.makedirs(static_folder_path)
+
+    # Save the plot to the static folder
+    plt.savefig(os.path.join(static_folder_path, f'{filename}.png'))
+    plt.close()
+    
+    return ttl_tickets, filename
+
+def retrieve_staff(conn, airline):
+    cursor = conn.cursor()
+    cursor.execute(f"""SELECT email, first_name, last_name, Admin_perm, Oper_perm, date_of_birth, aStaff_username AS username
+                   FROM AirlineStaff
+                   WHERE IATA_code='{airline}'""")
+    data = cursor.fetchall()
+    cursor.close()
+    return data

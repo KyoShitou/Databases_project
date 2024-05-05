@@ -28,7 +28,17 @@
             <th>Tickets sold</th>
             <th>Commission received</th>
         </tr>
+        {% for agent in agents %}
+            <tr>
+                <td>{{ agent['email'] }}</td>
+                <td>{{ agent['username'] }}</td>
+                <td>{{ agent['tickets'] }}</td>
+                <td>{{ agent['commission'] }}</td>
+            </tr>
+        {% endfor %}
     </table>
+
+    
 
     {% if session.admin %}
     <h1>Add agent to your company</h1>

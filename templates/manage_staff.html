@@ -7,11 +7,11 @@
     <title>Manage Staff</title>
 </head>
 <body style="font-family:Arial, Helvetica, sans-serif">
-    <script>
-        {% if msg[0]==True %}
+    {% if msg[0]==True %}
+        <script>
             alert('{{ msg[1] }}');
-        {% endif %}
-    </script>
+        </script>
+    {% endif %}
     <h1>Manage Staff</h1>
     <table border="1">
         <tr>
@@ -21,6 +21,15 @@
             <th>Admin</th>
             <th>Operator</th>
         </tr>
+    {% for staff in staff_lst %}
+        <tr>
+            <td>{{ staff['first_name'] }} {{ staff['last_name'] }}</td>
+            <td>{{ staff['username'] }}</td>
+            <td>{{ staff['date_of_birth'] }}</td>
+            <td>{{ staff['Admin_perm'] }}</td>
+            <td>{{ staff['Oper_perm'] }}</td>
+        </tr>
+    {% endfor %}
     </table>
 
     {% if session.admin %}
@@ -30,8 +39,8 @@
         <input type="username" id="username" name="username" required>
         <label for="permission">Grant permission: </label>
         <select name="permission" id="permission" required>
-            <option value="admin">Admin</option>
-            <option value="operator">Operator</option>
+            <option value="Admin_perm">Admin</option>
+            <option value="Oper_perm">Operator</option>
         <input type="submit" value="Grant" name="Grant">
     </form>
 

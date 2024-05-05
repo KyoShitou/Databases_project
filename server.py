@@ -2,6 +2,8 @@ from flask import Flask, render_template, request, redirect, url_for, session, s
 from datetime import datetime
 import pymysql.cursors
 import utils
+from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key_here'
@@ -244,14 +246,22 @@ def search_flights():
             flight_number = request.form['flight_number']
             msg = f"Customer {session['username']} booked flight {flight_number}"
 
+
+            avail = utils.retrieve_flights(conn, airline=flight_number[:2], flight_num=flight_number[2:])
+            if avail[0]['status'] == "Cancelled":
+                return render_template('search_flights.html', error=[True, f"Flight {flight_number} is cancelled"], 
+                               airport_lst=airport_lst, city_lst=city_lst, flights=flights)
+            if avail[0]['remaining_seats'] <= 0:
+                return render_template('search_flights.html', error=[True, f"Flight {flight_number} is full"], 
+                               airport_lst=airport_lst, city_lst=city_lst, flights=flights)
+
             cursor = conn.cursor()
-                           
 
             cursor.execute(f"INSERT INTO Ticket (flight_num, IATA_code) VALUES ({flight_number[2:]}, '{flight_number[:2]}')")
             cursor.execute(f"SELECT MAX(ticket_id) FROM Ticket WHERE flight_num={flight_number[2:]} AND IATA_code='{flight_number[:2]}'")
             ticket_id = cursor.fetchone()['MAX(ticket_id)']
             cursor.execute(f"""
-INSERT INTO purchase VALUES(
+                            INSERT INTO purchase VALUES(
                            {ticket_id}, '{session['email']}', NULL, NOW())
                            """)
             conn.commit()
@@ -560,22 +570,29 @@ def add_new_airport():
         return render_template('add_new_airport.html', msg=[True, f"New airport added with name {airport_name} in {city}"])
     return render_template('add_new_airport.html', msg=[False])
 
-@app.route('/add_new_agent', methods=['GET', 'POST'])
-def add_new_agent():
-    return
-
 @app.route('/manage_agents', methods=['GET', 'POST'])
 def manage_agents():
     if request.method == 'POST' and request.form.get("Search"):
         date_from = request.form['from_date']
         date_to = request.form['date_to']
+        agents = utils.retrieve_agents(conn, session['airline'], date_from, date_to)
         print(f"Searching for agents from {date_from} to {date_to}")
-        return render_template('manage_agents.html', msg=[True, f"Searching for agents from {date_from} to {date_to}"])  
+        return render_template('manage_agents.html', agents=agents, msg=[True, f"Searching for agents from {date_from} to {date_to}"])  
     if request.method == 'POST' and request.form.get("Add"):
         email = request.form['email']
-        print(f"Agent {email} added by {session['username']}")
-        return render_template('manage_agents.html', msg=[True, f"Agent {email} added by {session['username']}"])      
-    return render_template('manage_agents.html', msg=[False])
+        cursor = conn.cursor()
+        try:
+            cursor.execute(f"INSERT INTO Agent_work_for VALUES ('{email}', '{session['airline']}')")
+            conn.commit()
+            cursor.close()
+        except:
+            cursor.close()
+            agents = utils.retrieve_agents(conn, session['airline'])
+            return render_template('manage_agents.html', agents=agents, msg=[True, f"Agent {email} not exists or already working for you"])
+        return render_template('manage_agents.html', msg=[True, f"Agent {email} added by {session['username']}"])    
+    
+    agents = utils.retrieve_agents(conn, session['airline'])
+    return render_template('manage_agents.html', agents=agents, msg=[False])
 
 @app.route('/view_frequent_customers', methods=['GET', 'POST'])
 def view_frequent_customers():
@@ -583,28 +600,51 @@ def view_frequent_customers():
         date_from = request.form['from_date']
         date_to = request.form['date_to']
         print(f"Searching for customers from {date_from} to {date_to}")
-        return render_template('view_frequent_customers.html', msg=[True, f"Searching for agents from {date_from} to {date_to}"])
-    return render_template('view_frequent_customers.html', msg=[False]) 
+        customers = utils.retrieve_frequent_customers(conn, session['airline'], date_from, date_to)
+        return render_template('view_frequent_customers.html', customers=customers, msg=[True, f"Searching for agents from {date_from} to {date_to}"])
+    
+    customers = utils.retrieve_frequent_customers(conn, session['airline'], date_from=datetime.now()-timedelta(days=365), date_to=datetime.now())
+    return render_template('view_frequent_customers.html', customers=customers, msg=[False]) 
 
 @app.route('/view_reports', methods=['GET', 'POST'])
 def view_reports():
-    img_url = url_for('static', filename='img0.jpg')
+    
     if request.method == 'POST' and request.form.get("Search"):
         date_from = request.form['from_date']
         date_to = request.form['date_to']
-        print(f"Searching for customers from {date_from} to {date_to}")
-        return render_template('view_frequent_customers.html', msg=[True, f"Searching for agents from {date_from} to {date_to}"], 
-                               filename=img_url)
-    return render_template('view_reports.html', msg=[False], filename=img_url)
+        date_from = utils.month(date_from)
+        date_to = utils.month(date_to)
+        ttl_tickets, filename = utils.view_report(conn, session['airline'], date_from=date_from, date_to=date_to)
+        img_url = url_for('static', filename=f"{filename}.png")
+        return render_template('view_reports.html', ttl_tickets=ttl_tickets, date_from=date_from, date_to=date_to, filename=img_url, msg=[False])
+    
+    ttl_tickets, filename = utils.view_report(conn, session['airline'], date_from=(datetime.now()-timedelta(days=365)), date_to=(datetime.now()))
+    img_url = url_for('static', filename=f"{filename}.png")
+    return render_template('view_reports.html', msg=[False], ttl_tickets=ttl_tickets, filename=img_url, date_from=None, date_to=None)
 
 @app.route('/manage_staff', methods=['GET', 'POST'])
 def manage_staff():
     if request.method == "POST":
         username = request.form['username']
         premission = request.form['permission']
-        print(f"User {username} has been granted {premission} by {session['username']}")
-        return render_template('manage_staff.html', msg=[True, f"User {username} has been granted {premission} by {session['username']}"])
-    return render_template('manage_staff.html', msg=[False])
+
+        staff_lst = utils.retrieve_staff(conn, session['airline'])
+
+        cursor = conn.cursor()
+        try:
+            cursor.execute(f"UPDATE AirlineStaff SET {premission} = 1 WHERE aStaff_username='{username}'")
+            conn.commit()
+            cursor.close()
+        except:
+            cursor.close()
+            return render_template('manage_staff.html', staff_lst=staff_lst, msg=[True, f"User {username} not exists"])
+        
+        staff_lst = utils.retrieve_staff(conn, session['airline'])
+        return render_template('manage_staff.html', staff_lst=staff_lst, msg=[True, f"User {username} has been granted {premission} by {session['username']}"])
+    
+
+    staff_lst = utils.retrieve_staff(conn, session['airline'])
+    return render_template('manage_staff.html', staff_lst=staff_lst, msg=[False])
 
 @app.route('/upload/<filename>')
 def send_file(filename):

@@ -7,11 +7,11 @@
     <title>View frequent customers</title>
 </head>
 <body style="font-family:Arial, Helvetica, sans-serif">
-    <script>
-        {% if msg[0]==True %}
+    {% if msg[0]==True %}
+        <script>
             alert('{{ msg[1] }}');
-        {% endif %}
-    </script>
+        </script>
+    {% endif %}
 
     <form method="POST">
         <label for="from_date">Date from:</label>
@@ -28,15 +28,17 @@
             <th>Tickets sold</th>
             <th>Date of Birth</th>
         </tr>
-        <tr>
-            <td>customer1 email</td>
-            <td>Name</td>
-            <td>10</td>
-            <td>1990-01-01</td>
-        </tr>
-        <tr>
-            <td colspan="4">AA001</td>
-        </tr>
+        {% for customer in customers %}
+            <tr>
+                <td>{{ customer['email'] }}</td>
+                <td>{{ customer['name'] }}</td>
+                <td>{{ customer['tickets'] }}</td>
+                <td>{{ customer['date_of_birth'] }}</td>
+            </tr>
+            <tr>
+                <td colspan="4"> {{ customer['flights'] }}</td>
+            </tr>
+        {% endfor %}
     </table>
 
     <a href = "{{ url_for('home') }}" >Home</a>

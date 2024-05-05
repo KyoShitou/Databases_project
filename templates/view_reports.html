@@ -7,23 +7,34 @@
     <title>View reports</title>
 </head>
 <body style="font-family:Arial, Helvetica, sans-serif">
-    <script>
         {% if msg[0]==True %}
+        <script>
             alert('{{ msg[1] }}');
+        </script>
         {% endif %}
-    </script>
 
     <form method="POST">
         <label for="from_date">Date from:</label>
-        <input type="date" id="from_date" name="from_date" >
+        <input type="month" id="from_date" name="from_date" required>
         <label for="date_to"> to:</label>
-        <input type="date" id="date_to" name="date_to" >
-        <label for="percision">Percision (days):</label>
-        <input type="number" id="percision" name="percision" >
+        <input type="month" id="date_to" name="date_to" required>
         <input type="submit" value="Search" name="Search">
     </form>
 
-    <img src="{{ filename }}" >
+    {% if date_from and date_to %}
+    <h1>Report from {{date_from}} to {{date_to}}</h1>
+    {% elif date_from %}
+    <h1>Report from {{date_from}} </h1>
+    {% elif date_to %}
+    <h1>Report till {{date_to}}</h1>
+    {% else %}
+    <h1>Report of the last year</h1>
+    {% endif %}
+
+    <ul>
+        <li>Total tickets sold: {{ ttl_tickets }}</li>
+    </ul>
+    <img src="{{ filename }}" ><br>
 
     <a href = "{{ url_for('home') }}" >Home</a>
 

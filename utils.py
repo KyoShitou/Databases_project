@@ -3,6 +3,13 @@ import datetime
 import os
 from copy import deepcopy
 
+
+def query_anti_injection(query):
+    query = query.replace("'", "\\'")
+    query = query.replace('"', '\\"')
+    query = query.replace(";", "")
+    return query
+
 def gen_date_restriction(date_from, date_to, name="date"):
     if date_from and date_to:
         date_restriction = f"AND {name} BETWEEN '{date_from}' AND '{date_to}'"
@@ -56,7 +63,8 @@ def retrieve_flights(conn, airline=None, num=None, dept_city=None, dept_ap=None,
         if type(airline) == str:
             restrictions.append(f"IATA_code='{airline}'")
         if type(airline) == list:
-            restrictions.append(f"IATA_code IN {tuple(airline)}")
+            airline_str = ', '.join([f"'{a}'" for a in airline])
+            restrictions.append(f"IATA_code IN ({airline_str})")
     if num:
         restrictions.append(f"flight_num={num}")
     if dept_time_from and dept_time_to:
@@ -108,42 +116,39 @@ def retrieve_flights(conn, airline=None, num=None, dept_city=None, dept_ap=None,
         flight['remaining_seats'] = total_seats["seats"] - seats_sold["cnt"]
     cursor.close()
 
+    data.sort(key=lambda x : x["Departure_time"])
     return data
 
 def retrieve_flights_with_passengers(conn, agent=None, staff=None, customer=None, date_from=None, date_to=None):
     cursor = conn.cursor()
     if (agent == None) and (staff == None) and (customer == None):
         return None
+    date_restriction = gen_date_restriction(date_from, date_to, name='Departure_time')
     if customer:
-        cursor.execute(f"""SELECT flight_num, IATA_code
-                       FROM ticket
-                       WHERE ticket_id IN (
-                            SELECT ticket_id
-                            FROM purchase
-                            WHERE customer_email='{customer}'
-                       )""")
+        cursor.execute(f"""SELECT DISTINCT flight_num, IATA_code
+                       FROM purchase NATURAL JOIN ticket NATURAL JOIN flight
+                        WHERE customer_email='{customer}' {date_restriction}
+                       """)
         result = cursor.fetchall()
         ret = []
         for f in result:
-            t = retrieve_flights(conn, num=f["flight_num"], airline=f["IATA_code"], dept_time_from=date_from, dept_time_to=date_to)
+            t = retrieve_flights(conn, num=f["flight_num"], airline=f["IATA_code"])
             if len(t) != 0:
                 ret.append(t[0])
             else:
                 continue
+        ret.sort(key=lambda x : x["Departure_time"])
         
     if agent:
-        cursor.execute(f"""SELECT flight_num, IATA_code
-                       FROM ticket 
-                       WHERE ticket_id IN (
-                            SELECT ticket_id
-                            FROM purchase
-                            WHERE agent_email='{agent}'
-                       )""")
+        cursor.execute(f"""SELECT DISTINCT flight_num, IATA_code
+                       FROM ticket NATURAL JOIN purchase NATURAL JOIN flight
+                        WHERE agent_email='{agent}' {date_restriction}
+                       """)
         result = cursor.fetchall()
         print(result)
         ret = []
         for f in result:
-            ret.append(retrieve_flights(conn, num=f["flight_num"], airline=f["IATA_code"], dept_time_from=date_from, dept_time_to=date_to)[0])
+            ret.append(retrieve_flights(conn, num=f["flight_num"], airline=f["IATA_code"])[0])
             cursor.execute(f"""SELECT customer.name as name
                            FROM flight NATURAL JOIN ticket NATURAL JOIN purchase JOIN customer ON purchase.customer_email = customer.email
                             WHERE flight_num={f["flight_num"]} AND IATA_code='{f["IATA_code"]}' AND agent_email='{agent}'   """)
@@ -153,6 +158,7 @@ def retrieve_flights_with_passengers(conn, agent=None, staff=None, customer=None
                 passengers.append(p["name"])
             passengers = ', '.join(passengers)
             ret[-1]["passengers"] = passengers
+            ret.sort(key=lambda x : x["Departure_time"])
     if staff:
         cursor.execute(f"SELECT IATA_code FROM AirlineStaff WHERE email='{staff}'")
         airline = cursor.fetchone()
@@ -170,6 +176,8 @@ def retrieve_flights_with_passengers(conn, agent=None, staff=None, customer=None
             else:
                 passengers = "No passengers"
             f["passengers"] = passengers
+        
+        ret.sort(key=lambda x : x["Departure_time"])
         
     cursor.close()
     return ret
@@ -422,12 +430,12 @@ def retrieve_agents(conn, airline, date_from=None, date_to=None):
     for agent in data:
         email = agent["email"]
         cursor.execute(f"""SELECT COUNT(*) as total
-                       FROM purchase
-                       WHERE agent_email='{email}' {date_restriction}""")
+                       FROM purchase NATURAL JOIN ticket
+                       WHERE agent_email='{email}' AND IATA_code='{airline}' {date_restriction}""")
         agent["tickets"] = cursor.fetchone()["total"]
         cursor.execute(f"""SELECT SUM(price) as total
                           FROM purchase NATURAL JOIN ticket NATURAL JOIN flight
-                          WHERE agent_email='{email}' {date_restriction}""")
+                          WHERE agent_email='{email}' AND IATA_code='{airline}' {date_restriction}""")
         comm = cursor.fetchone()["total"]
         if comm:
             agent["commission"] = float(comm) * 0.1

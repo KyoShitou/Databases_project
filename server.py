@@ -5,6 +5,9 @@ import utils
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 
+import hashlib
+
+
 app = Flask(__name__)
 app.secret_key = 'your_secret_key_here'
 
@@ -22,6 +25,17 @@ def login():
         username = request.form['email']
         password = request.form['password']
         
+        if len(password) == 10:
+            pass 
+        else:
+            password = hashlib.md5(password.encode()).hexdigest()
+
+# BONOUS: SECURITY -> ANTI SQL INJECTION
+# For example, username = "user@example.com' OR 1=1; --"
+# the function would escape the single quote and the semicolon
+        username = utils.query_anti_injection(username)
+        password = utils.query_anti_injection(password)
+
         cursor = conn.cursor()
         cursor.execute(f"SELECT * FROM Customer WHERE email='{username}' AND password='{password}'")
         result = cursor.fetchone()
@@ -77,7 +91,9 @@ def register():
         username = request.form['email']
         password = request.form['password']
         role = request.form['role']
-        
+
+# BONOUS: SECURITY -> HASHING PASSWORD
+        password = hashlib.md5(password.encode()).hexdigest()
         cursor = conn.cursor()
         
         if role == "Customer":
@@ -221,20 +237,43 @@ def logout():
     session.pop('email', None)
     session.pop('username', None)
     session.pop('role', None)
-    return redirect(url_for('home'))
+    session.pop('admin', None)
+    session.pop('operator', None)
+    session.pop('airline', None)
+    return render_template('home.html', msg=[True, "Bye!"])
 
 @app.route('/search_flights', methods=['GET', 'POST'])
 def search_flights():
     airport_city_dict, airport_lst, city_lst = utils.retrieve_airports_and_city(conn)
-    flights = utils.retrieve_flights(conn)
+    if session.get('role', ' ') == 'Agent':
+        cursor = conn.cursor()
+        cursor.execute(f"SELECT * FROM Agent_work_for WHERE agent_email='{session['email']}'")
+        airlines = cursor.fetchall()
+        airlines = [airline['IATA_code'] for airline in airlines]
+        cursor.close()
+        flights = utils.retrieve_flights(conn, dept_time_from=datetime.now(), airline=airlines)
+    else:
+        flights = utils.retrieve_flights(conn, dept_time_from=datetime.now())
     print(flights)
     if request.method == 'POST' and request.form.get("Search"):
+        airport_city_dict, airport_lst, city_lst = utils.retrieve_airports_and_city(conn)
         departure_airport = request.form['departure_airport']
         departure_city = request.form['departure_city']
         arrival_airport = request.form['arrival_airport']
         arrival_city = request.form['arrival_city']
         departure_date_from = request.form['departure_date_from']
         departure_date_to = request.form['departure_date_to']
+
+        print(departure_city, departure_airport)
+
+        if (departure_city != 'None') and (departure_airport != 'None'):
+            if (airport_city_dict[departure_airport] != departure_city):
+                return render_template('search_flights.html', error=[True, "Invalid departure city"], 
+                               airport_lst=airport_lst, city_lst=city_lst, flights=flights)
+        if (arrival_city != 'None') and (arrival_airport != 'None'):
+            if (airport_city_dict[arrival_airport] != arrival_city):
+                return render_template('search_flights.html', error=[True, "Invalid arrival city"], 
+                               airport_lst=airport_lst, city_lst=city_lst, flights=flights)
         print(f"Searching for flights from {departure_airport} to {arrival_airport} from {departure_date_from} to {departure_date_to}")
         flights = utils.retrieve_flights(conn, dept_ap=departure_airport, arri_ap=arrival_airport, dept_city=departure_city, arri_city=arrival_city, dept_time_from=departure_date_from, dept_time_to=departure_date_to)
 
@@ -247,7 +286,7 @@ def search_flights():
             msg = f"Customer {session['username']} booked flight {flight_number}"
 
 
-            avail = utils.retrieve_flights(conn, airline=flight_number[:2], flight_num=flight_number[2:])
+            avail = utils.retrieve_flights(conn, airline=flight_number[:2], num=flight_number[2:])
             if avail[0]['status'] == "Cancelled":
                 return render_template('search_flights.html', error=[True, f"Flight {flight_number} is cancelled"], 
                                airport_lst=airport_lst, city_lst=city_lst, flights=flights)
@@ -312,11 +351,11 @@ def book_flights():
 @app.route('/view_my_flights', methods=['GET', 'POST'])
 def view_my_flights(): 
     if session['role'] == 'Customer':
-        flights = utils.retrieve_flights_with_passengers(conn, customer=session['email'])
+        flights = utils.retrieve_flights_with_passengers(conn, customer=session['email'], date_from=datetime.now())
     elif session['role'] == 'Agent':
-        flights = utils.retrieve_flights_with_passengers(conn, agent=session['email'])
+        flights = utils.retrieve_flights_with_passengers(conn, agent=session['email'], date_from=datetime.now())
     else:
-        flights = utils.retrieve_flights_with_passengers(conn, staff=session['email'])
+        flights = utils.retrieve_flights_with_passengers(conn, staff=session['email'], date_from=datetime.now())
 
     if request.method == 'POST':
         from_date = request.form['departure_date_from']
@@ -335,6 +374,10 @@ def view_my_flights():
 @app.route('/track_spendings', methods=['GET', 'POST'])
 def track_spendings():
 
+# BONOUS: DATA VISUALIZATION 1
+    if session['role'] != 'Customer':
+        return render_template('home.html', msg=[True, "You are not logged in as a customer"])
+    
     if request.method == 'POST':
         from_date = request.form['departure_date_from']
         to_date = request.form['departure_date_to']
@@ -361,6 +404,9 @@ def track_spendings():
 
 @app.route('/view_commission', methods=['GET', 'POST'])
 def view_commission():
+    if session['role'] != 'Agent':
+        return render_template('home.html', msg=[True, "You are not logged in as an agent"])
+    
     cursor = conn.cursor()
     cursor.execute(f"""
                 SELECT COUNT(ticket_id) as CNT
@@ -420,6 +466,10 @@ def view_commission():
 
 @app.route('/view_top_customers', methods=['GET', 'POST'])
 def view_top_customers():
+# BONOUS: DATA VISUALIZATION 2
+    if session['role'] != 'Agent':
+        return render_template('home.html', msg=[True, "You are not logged in as an agent"])
+    
     today = datetime.now()
     from_date = []
     if today.month - 5 <= 0:
@@ -436,7 +486,8 @@ def view_top_customers():
     if request.method == 'POST':
         from_date = request.form['departure_date_from']
         to_date = request.form['departure_date_to']
-        img_url = url_for('static', filename='img0.jpg')
+        filename = utils.top_customers(conn, from_date, to_date, session['email'])
+        img_url = url_for('static', filename=f'{filename}.png')
 
         return render_template('view_top_customers.html', start_date=from_date, end_date=to_date, filename=img_url)    
     return render_template('view_top_customers.html', start_date=None, end_date=None, filename=img_url)
@@ -447,8 +498,11 @@ def view_top_customers():
 
 @app.route('/create_new_flights', methods=['GET', 'POST'])
 def create_new_flights():
+    if session['role'] != 'Staff':
+        return render_template('home.html', msg=[True, "You are not logged in as a staff"])
     if session["admin"] == False:
         return render_template('home.html', msg=[True, "No admin permission"])
+    
     if request.method == 'POST':
         airport_city_dict, airport_lst, city_lst = utils.retrieve_airports_and_city(conn)
         airplane_lst = utils.retrieve_airplanes(conn, session['airline'])
@@ -458,6 +512,8 @@ def create_new_flights():
         arrival_time = request.form['arrival_time']
         price = request.form['price']
         airplane_id = request.form['Airplane_id']
+        if departure_airport == arrival_airport:
+            return render_template('create_new_flights.html', airport_lst=airport_lst, airplane_lst=airplane_lst, msg=[True, "Departure and arrival airport cannot be the same"])
         flag = utils.create_new_flights(conn, departure_airport, arrival_airport, departure_time, arrival_time, price, airplane_id, session['airline'])
         if flag == 0:
             return render_template('create_new_flights.html', airport_lst=airport_lst, airplane_lst=airplane_lst, msg=[True, f"New flight created from {departure_airport} to {arrival_airport} at {departure_time} to {arrival_time} for ${price} with airplane {airplane_id}"])
@@ -472,7 +528,9 @@ def create_new_flights():
 
 @app.route('/change_status', methods=['GET', 'POST'])
 def change_status():
-    if session["operator"] == False and session["admin"] == False:
+    if session['role'] != 'Staff':
+        return render_template('home.html', msg=[True, "You are not logged in as a staff"])
+    if session["operator"] == False or session["admin"] == False:
         return render_template('home.html', msg=[True, "No operator permission"])
     
     if request.method == 'POST' and request.form.get("Change"):
@@ -539,8 +597,11 @@ def change_status():
 
 @app.route('/add_new_plane', methods=['GET', 'POST'])
 def add_new_plane():
+    if session['role'] != 'Staff':
+        return render_template('home.html', msg=[True, "You are not logged in as a staff"])
     if session["admin"] == False:
         return render_template('home.html', msg=[True, "No admin permission"])
+    
     if request.method == 'POST':
         seat_count = request.form['seats']
         cursor = conn.cursor()
@@ -552,6 +613,8 @@ def add_new_plane():
 
 @app.route('/add_new_airport', methods=['GET', 'POST'])
 def add_new_airport():
+    if session['role'] != 'Staff':
+        return render_template('home.html', msg=[True, "You are not logged in as a staff"])
     if session["admin"] == False:
         return render_template('home.html', msg=[True, "No admin permission"])
     if request.method == 'POST':
@@ -572,6 +635,8 @@ def add_new_airport():
 
 @app.route('/manage_agents', methods=['GET', 'POST'])
 def manage_agents():
+    if session['role'] != 'Staff':
+        return render_template('home.html', msg=[True, "You are not logged in as a staff"])
     if request.method == 'POST' and request.form.get("Search"):
         date_from = request.form['from_date']
         date_to = request.form['date_to']
@@ -596,6 +661,8 @@ def manage_agents():
 
 @app.route('/view_frequent_customers', methods=['GET', 'POST'])
 def view_frequent_customers():
+    if session['role'] != 'Staff':
+        return render_template('home.html', msg=[True, "You are not logged in as a staff"])
     if request.method == 'POST' and request.form.get("Search"):
         date_from = request.form['from_date']
         date_to = request.form['date_to']
@@ -608,7 +675,9 @@ def view_frequent_customers():
 
 @app.route('/view_reports', methods=['GET', 'POST'])
 def view_reports():
-    
+# BONOUS: DATA VISUALIZATION 3
+    if session['role'] != 'Staff':
+        return render_template('home.html', msg=[True, "You are not logged in as a staff"])
     if request.method == 'POST' and request.form.get("Search"):
         date_from = request.form['from_date']
         date_to = request.form['date_to']
@@ -624,6 +693,8 @@ def view_reports():
 
 @app.route('/manage_staff', methods=['GET', 'POST'])
 def manage_staff():
+    if session['role'] != 'Staff':
+        return render_template('home.html', msg=[True, "You are not logged in as a staff"])
     if request.method == "POST":
         username = request.form['username']
         premission = request.form['permission']

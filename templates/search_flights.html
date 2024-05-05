@@ -32,7 +32,7 @@
         </select>
 
         <label for="arrival_airport">Arrival Airport:</label>
-        <select name="arrival_airport" id="arrival_airport">
+        <select name="arrival_airport" id="arrival_airport" value="{{ request.form['arrival_airport'] }}">
             <option value="None"> </option>
         {% for airport in airport_lst %}
             <option value="{{ airport }}">{{ airport }}</option>
@@ -99,6 +99,7 @@
             <th>Arrival Time</th>
             <th>Status</th>
             <th>Available seats</th>
+            <th>Price</th>
             <th>Departure Airport</th>
             <th>Departure City</th>
             <th>Arrival Airport</th>
@@ -121,6 +122,7 @@
             <td  style="color: green;"> {{ flight['status_now'] }} </td>
         {% endif %}
         <td> {{ flight['remaining_seats'] }} </td>
+        <td> {{ flight['price'] }}</td>
         <td> {{ flight['Departure_Airport'] }} </td>
         <td> {{flight['Departure_city']}} </td>
         <td> {{flight['Arrival_Airport']}} </td>
@@ -143,6 +145,7 @@
             <th>Arrival Time</th>
             <th>Status</th>
             <th>Available seats</th>
+            <th>Price</th>
             <th>Departure Airport</th>
             <th>Departure City</th>
             <th>Arrival Airport</th>
@@ -165,6 +168,7 @@
             <td  style="color: green;"> {{ flight['status_now'] }} </td>
         {% endif %}
         <td> {{ flight['remaining_seats'] }} </td>
+        <td> {{ flight['price'] }} </td>
         <td> {{ flight['Departure_Airport'] }} </td>
         <td> {{flight['Departure_city']}} </td>
         <td> {{flight['Arrival_Airport']}} </td>
@@ -189,6 +193,7 @@
             <th>Arrival Time</th>
             <th>Status</th>
             <th>Available seats</th>
+            <th>Price</th>
             <th>Departure Airport</th>
             <th>Departure City</th>
             <th>Arrival Airport</th>

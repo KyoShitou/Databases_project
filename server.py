@@ -233,13 +233,20 @@ def reg_staff(email, password):
 
 @app.route('/logout')
 def logout():
-    session.pop('logged_in', None)
-    session.pop('email', None)
-    session.pop('username', None)
-    session.pop('role', None)
-    session.pop('admin', None)
-    session.pop('operator', None)
-    session.pop('airline', None)
+    session['logged_in'] = False
+    session['email'] = None
+    session['username'] = None
+    session['role'] = None
+    session['admin'] = None
+    session['operator'] = None
+    session['airline'] = None
+    # session.pop('logged_in', None)
+    # session.pop('email', None)
+    # session.pop('username', None)
+    # session.pop('role', None)
+    # session.pop('admin', None)
+    # session.pop('operator', None)
+    # session.pop('airline', None)
     return render_template('home.html', msg=[True, "Bye!"])
 
 @app.route('/search_flights', methods=['GET', 'POST'])
@@ -339,7 +346,7 @@ def search_flights():
 @app.route('/book_flights', methods=['GET', 'POST'])
 def book_flights():
     if request.method == 'POST':
-        if session['role'] == 'Customer':
+        if session.get('role', None) == 'Customer':
             flight_number = request.form['flight_number']
             print(f"Customer {session['username']} booked flight {flight_number}")
         else:
@@ -350,19 +357,19 @@ def book_flights():
 
 @app.route('/view_my_flights', methods=['GET', 'POST'])
 def view_my_flights(): 
-    if session['role'] == 'Customer':
-        flights = utils.retrieve_flights_with_passengers(conn, customer=session['email'], date_from=datetime.now())
-    elif session['role'] == 'Agent':
-        flights = utils.retrieve_flights_with_passengers(conn, agent=session['email'], date_from=datetime.now())
+    if session.get('role', None) == 'Customer':
+        flights = utils.retrieve_flights_for_customers(conn, customer=session['email'], dept_time_from=datetime.now() - timedelta(days=1))
+    elif session.get('role', None) == 'Agent':
+        flights = utils.retrieve_flights_with_passengers(conn, agent=session['email'], date_from=datetime.now() - timedelta(days=1))
     else:
-        flights = utils.retrieve_flights_with_passengers(conn, staff=session['email'], date_from=datetime.now())
+        flights = utils.retrieve_flights_with_passengers(conn, staff=session['email'], date_from=datetime.now() - timedelta(days=1))
 
     if request.method == 'POST':
         from_date = request.form['departure_date_from']
         to_date = request.form['departure_date_to']
         print(f"Searching for flights from {from_date} to {to_date}")
         if session['role'] == 'Customer':
-            flights = utils.retrieve_flights_with_passengers(conn, customer=session['email'], date_from=from_date, date_to=to_date)
+            flights = utils.retrieve_flights_for_customers(conn, customer=session['email'], dept_time_from=from_date, dept_time_to=to_date)
         elif session['role'] == 'Agent':
             flights = utils.retrieve_flights_with_passengers(conn, agent=session['email'], date_from=from_date, date_to=to_date)
         else:
@@ -375,7 +382,7 @@ def view_my_flights():
 def track_spendings():
 
 # BONOUS: DATA VISUALIZATION 1
-    if session['role'] != 'Customer':
+    if session.get('role', None) != 'Customer':
         return render_template('home.html', msg=[True, "You are not logged in as a customer"])
     
     if request.method == 'POST':
@@ -404,7 +411,7 @@ def track_spendings():
 
 @app.route('/view_commission', methods=['GET', 'POST'])
 def view_commission():
-    if session['role'] != 'Agent':
+    if session.get('role', None) != 'Agent':
         return render_template('home.html', msg=[True, "You are not logged in as an agent"])
     
     cursor = conn.cursor()
@@ -467,7 +474,7 @@ def view_commission():
 @app.route('/view_top_customers', methods=['GET', 'POST'])
 def view_top_customers():
 # BONOUS: DATA VISUALIZATION 2
-    if session['role'] != 'Agent':
+    if session.get('role', None) != 'Agent':
         return render_template('home.html', msg=[True, "You are not logged in as an agent"])
     
     today = datetime.now()
@@ -498,9 +505,9 @@ def view_top_customers():
 
 @app.route('/create_new_flights', methods=['GET', 'POST'])
 def create_new_flights():
-    if session['role'] != 'Staff':
+    if session.get('role', None) != 'Staff':
         return render_template('home.html', msg=[True, "You are not logged in as a staff"])
-    if session["admin"] == False:
+    if session.get('admin', None) == False:
         return render_template('home.html', msg=[True, "No admin permission"])
     
     if request.method == 'POST':

@@ -20,11 +20,11 @@
     {% if session.role == 'Customer' %}
     <table border="1">
         <tr>
+            <th>Ticket ID</th>
             <th>Flight</th>
             <th>Departure Time</th>
             <th>Arrival Time</th>
             <th>Status</th>
-            <th>Available seats</th>
             <th>Departure Airport</th>
             <th>Departure City</th>
             <th>Arrival Airport</th>
@@ -32,6 +32,7 @@
         </tr>
         {% for flight in flights %}
         <tr>
+        <td> {{ flight['ticket_id'] }} </td>
         <td> {{ flight['IATA_code'] }}{{ "%03d" | format(flight['flight_num']) }} </td>
         <td> {{ flight['Departure_time'] }} </td>
         <td> {{ flight['Arrival_time'] }} </td>
@@ -46,7 +47,6 @@
         {% else %}
             <td  style="color: green;"> {{ flight['status_now'] }} </td>
         {% endif %}
-        <td> {{ flight['remaining_seats'] }} </td>
         <td> {{ flight['Departure_Airport'] }} </td>
         <td> {{flight['Departure_city']}} </td>
         <td> {{flight['Arrival_Airport']}} </td>

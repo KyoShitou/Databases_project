@@ -632,3 +632,58 @@ def retrieve_staff(conn, airline):
     data = cursor.fetchall()
     cursor.close()
     return data
+
+
+def retrieve_flights_for_customers(conn, customer, airline=None, num=None, dept_city=None, dept_ap=None, arri_city=None, arri_ap=None, 
+                     dept_time_from=None, dept_time_to=None):
+    cursor = conn.cursor()
+    restrictions = []
+    restrictions.append(f"customer_email='{customer}'")
+    if airline:
+        if type(airline) == str:
+            restrictions.append(f"IATA_code='{airline}'")
+        if type(airline) == list:
+            airline_str = ', '.join([f"'{a}'" for a in airline])
+            restrictions.append(f"IATA_code IN ({airline_str})")
+    if num:
+        restrictions.append(f"flight_num={num}")
+    if dept_time_from and dept_time_to:
+        restrictions.append(f"Departure_time BETWEEN '{dept_time_from}' AND '{dept_time_to}'")
+    elif dept_time_from:
+        restrictions.append(f"Departure_time >= '{dept_time_from}'")
+    elif dept_time_to:
+        restrictions.append(f"Departure_time <= '{dept_time_to}'")
+    
+    if dept_city != "None" and dept_city:
+        restrictions.append(f"Dept_Airport.City='{dept_city}'")
+    if dept_ap != "None" and dept_city:
+        restrictions.append(f"Departure_Airport='{dept_ap}'")
+    if arri_city != "None" and dept_city:
+        restrictions.append(f"Arri_Airport.City='{arri_city}'")
+    if arri_ap != "None" and dept_city:
+        restrictions.append(f"Arrival_Airport='{arri_ap}'")
+
+    query = """SELECT flight_num, IATA_code, Departure_time, Arrival_time, price, status,
+                        Departure_Airport, Dept_Airport.City AS Departure_city, 
+                        Arrival_Airport, Arri_Airport.City AS Arrival_city, ticket_id,
+                        CASE 
+                        WHEN status = 'cancelled' THEN 'cancelled'
+                        WHEN Arrival_time < NOW() THEN 'completed'
+                        WHEN status = 'delayed' THEN 'delayed'
+                        WHEN Departure_time > NOW() THEN 'upcoming'
+                        ELSE 'in-progress'
+                    END AS status_now
+                    FROM flight
+                        LEFT JOIN Airport AS Dept_Airport ON flight.Departure_Airport = Dept_Airport.Airport_name
+                        LEFT JOIN Airport AS Arri_Airport ON flight.Arrival_Airport = Arri_Airport.Airport_name
+                        NATURAL JOIN ticket NATURAL JOIN purchase"""
+
+    if restrictions:
+        query += "\nWHERE " + " AND ".join(restrictions)
+    print(query)
+    cursor.execute(query)
+    data = cursor.fetchall()
+    cursor.close()
+
+    data.sort(key=lambda x : x["Departure_time"])
+    return data
